@@ -4,8 +4,11 @@ import com.mangareader.entity.MangaEntity;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReaperScansCrawler extends AbstractCrawler {
 
@@ -13,7 +16,6 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
     public ReaperScansCrawler() {
         initMangaEntities();
-        parseMangas();
     }
 
     private void initMangaEntities() {
@@ -22,30 +24,61 @@ public class ReaperScansCrawler extends AbstractCrawler {
                 .urlName("2800-player-who-returned-10000-years-later")
                 .build();
         mangaNames.add(player);
+        player = MangaEntity.builder()
+            .name("Duke Pendragon")
+            .urlName("2633-duke-pendragon")
+            .build();
+        mangaNames.add(player);
     }
 
-    private void parseMangas() {
+    public List<String> parseMangas() {
+        List<String> images = new ArrayList<>();
         try {
             for (MangaEntity mangaEntity : mangaNames) {
                 Document document = Jsoup.connect(toUrl(BASE_URL, mangaEntity.getUrlName()))
                         .userAgent("Chrome")
                         .get();
+
                 Integer numOfChapters = getNumberOfChapters(document);
-                System.out.println(numOfChapters);
-                System.out.println("hahaaasdasdsaa");
+
+                String latestChapterLink = parseLinkText(document, numOfChapters);
+                Document latestChapter = Jsoup.connect(latestChapterLink)
+                        .userAgent("Chrome")
+                        .get();
+
+                images.addAll(parseImages(latestChapter));
             }
         } catch (IOException e) {
             LOGGER.error(e);
         }
+        return images;
     }
 
     private Integer getNumberOfChapters(Document document) {
-        if (document != null) {
-            Element parsedElement = document.select("div > div > h1").get(1);
-            if (parsedElement != null && !parsedElement.text().equals("")) {
-                return Integer.valueOf(parsedElement.text().split(" ")[0]);
-            }
-        }
-        return null;
+        return document.select("div > div > h1")
+            .stream()
+            .skip(1)
+            .findFirst()
+            .map(Element::text)
+            .filter(e -> !e.equals(""))
+            .map(e -> e.split(" ")[0])
+            .map(Integer::parseInt)
+            .orElse(null);
+    }
+
+    private String parseLinkText(Document document, Integer chapterNumber) {
+        return document.select("li > a[href]")
+            .stream()
+            .findFirst()
+            .map(e -> e.attr("href"))
+            .filter(e -> e.contains(chapterNumber.toString()))
+            .orElse(null);
+    }
+
+    private List<String> parseImages(Document document) {
+        return document.select("main > div > p > img[src]")
+            .stream()
+            .map(e -> e.attr("src"))
+            .toList();
     }
 }
