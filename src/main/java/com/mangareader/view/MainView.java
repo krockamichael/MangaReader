@@ -48,13 +48,10 @@ public class MainView extends VerticalLayout {
 
     private List<Image> createImageComponents() {
         ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-        List<String> imageUrls = rsCrawler.parseMangas();
-        List<Image> images = new ArrayList<>();
-        for (String url : imageUrls) {
-            Image img = new Image(url, "");
-            images.add(img);
-        }
 
-        return images;
+        return rsCrawler.parseMangas()
+            .stream()
+            .map(url -> new Image(url, ""))
+            .toList();
     }
 }
