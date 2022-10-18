@@ -32,7 +32,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
                         .get();
                 Integer numOfChapters = getNumberOfChapters(document);
                 System.out.println(numOfChapters);
-                System.out.println("hahaaasdasda");
+                System.out.println("hahaaasdasdsaa");
             }
         } catch (IOException e) {
             LOGGER.error(e);
