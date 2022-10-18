@@ -1,6 +1,6 @@
-package com.mangareader.mangareader.view.main;
+package com.mangareader.view.main;
 
-import com.mangareader.mangareader.crawler.ReaperScansCrawler;
+import com.mangareader.crawler.ReaperScansCrawler;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;

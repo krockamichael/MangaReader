@@ -1,4 +1,4 @@
-package com.mangareader.mangareader.entity;
+package com.mangareader.entity;
 
 import lombok.Builder;
 import lombok.Getter;

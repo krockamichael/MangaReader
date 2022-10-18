@@ -1,6 +1,6 @@
-package com.mangareader.mangareader.crawler;
+package com.mangareader.crawler;
 
-import com.mangareader.mangareader.entity.MangaEntity;
+import com.mangareader.entity.MangaEntity;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

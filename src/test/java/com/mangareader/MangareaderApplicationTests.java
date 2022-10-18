@@ -1,4 +1,4 @@
-package com.mangareader.mangareader;
+package com.mangareader;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

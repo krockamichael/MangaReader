@@ -1,4 +1,4 @@
-package com.mangareader.mangareader;
+package com.mangareader;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

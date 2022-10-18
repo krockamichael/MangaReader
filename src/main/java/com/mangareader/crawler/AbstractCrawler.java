@@ -1,6 +1,6 @@
-package com.mangareader.mangareader.crawler;
+package com.mangareader.crawler;
 
-import com.mangareader.mangareader.entity.MangaEntity;
+import com.mangareader.entity.MangaEntity;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
