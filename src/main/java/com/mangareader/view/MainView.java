@@ -1,57 +1,42 @@
 package com.mangareader.view;
 
-import com.mangareader.crawler.ReaperScansCrawler;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.mangareader.entity.MangaEntity;
+import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.server.VaadinSession;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-@PageTitle("Main")
+@PageTitle("Home")
 @Route(value = "")
 public class MainView extends VerticalLayout {
 
-    public MainView() {
-        setupContent();
-    }
+  //TODO: init manga collection
+  //  create entity links
+  //  in ChapterView select entity from session based on :mangaId?
 
-    private void setupContent() {
-        Button homeButton = createHomeButton();
-        Button bookmarksButton = createBookmarksButton();
-        add(new HorizontalLayout(homeButton, bookmarksButton));
+  public MainView() {
+    add(new Navigation());
 
-        setupImageContent();
+    // FIXME: could be collection wrapper for multiple entities
+    // FIXME: manga entities initializer in specific class, read from CSV?
+    //  Use DB (for 2 strings and an integer)?
+    VaadinSession.getCurrent().setAttribute(MangaEntity.class, MangaEntity.builder().name("Player Who Returned 10,000 Years Later").urlName("2800-player-who-returned-10000-years-later").build());
+    routerLink();
 
-        setMargin(true);
-        setAlignItems(Alignment.CENTER);
-        setJustifyContentMode(JustifyContentMode.CENTER);
-    }
+    setMargin(true);
+    setAlignItems(Alignment.CENTER);
+    setJustifyContentMode(JustifyContentMode.CENTER);
+  }
 
-    private Button createHomeButton() {
-        return new Button("Home");
-    }
+  private void routerLink() {
+    NativeButton linkButton = new NativeButton("some manga");
 
-    private Button createBookmarksButton() {
-        return new Button("Bookmarks");
-    }
-
-    private void setupImageContent() {
-        List<Image> imageComponents = createImageComponents();
-        imageComponents.forEach(this::add);
-    }
-
-    private List<Image> createImageComponents() {
-        ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-
-        return rsCrawler.parseMangas()
-            .stream()
-            .map(url -> new Image(url, ""))
-            .toList();
-    }
+    linkButton.addClickListener(e ->
+        linkButton.getUI().ifPresent(ui -> ui.navigate(
+            ChapterView.class,
+            new RouteParameters("mangaId", "2633-duke-pendragon"))));
+    add(linkButton);
+  }
 }
