@@ -22,21 +22,22 @@ public class ReaperScansCrawler extends AbstractCrawler {
     clearFileNames();
   }
 
-  public Set<String> parseChapter(String mangaUrl) {
+  public Set<String> parseChapter(MangaEntity entity) {
     try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, mangaUrl))
+      Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
           .userAgent(USER_AGENT)
           .get();
 
       // FIXME: potential NPE
       String numOfChapters = getNumberOfChapters(document).toString();
       String latestChapterLink = parseLinkText(document, numOfChapters);
+      entity.setNumOfChapters(Integer.parseInt(numOfChapters));
 
       Document latestChapter = Jsoup.connect(latestChapterLink)
           .userAgent(USER_AGENT)
           .get();
 
-      loadAndSaveImages(mangaUrl, numOfChapters, parseImages(latestChapter));
+      loadAndSaveImages(entity.getUrlName(), numOfChapters, parseImages(latestChapter));
       return filenames;
     } catch (IOException e) {
       LOGGER.error(e);

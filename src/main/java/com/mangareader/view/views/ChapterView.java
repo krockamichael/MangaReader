@@ -26,7 +26,7 @@ public class ChapterView extends AbstractVerticalLayout {
 
   private void setupImageComponents() {
     ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-    rsCrawler.parseChapter(mangaEntity.getUrlName())
+    rsCrawler.parseChapter(mangaEntity)
         .stream()
         .map(url -> new Image(new StreamResource(getImageName(url),
             () -> getClass().getResourceAsStream("/images/" + url)), ""))
