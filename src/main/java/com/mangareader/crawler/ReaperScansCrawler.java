@@ -1,62 +1,47 @@
 package com.mangareader.crawler;
 
 import com.mangareader.entity.MangaEntity;
+import com.vaadin.flow.internal.Pair;
+import org.apache.commons.lang3.BooleanUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class ReaperScansCrawler extends AbstractCrawler {
 
   protected static final String BASE_URL = "https://reaperscans.com/comics/";
 
   public ReaperScansCrawler() {
-    initMangaEntities();
+    clearFileNames();
   }
 
-  private void initMangaEntities() {
-    MangaEntity player = MangaEntity.builder()
-        .name("Player Who Returned 10,000 Years Later")
-        .urlName("2800-player-who-returned-10000-years-later")
-        .build();
-    mangaNames.add(player);
-//    player = MangaEntity.builder()
-//        .name("Duke Pendragon")
-//        .urlName("2633-duke-pendragon")
-//        .build();
-//    mangaNames.add(player);
-  }
-
-  public List<String> parseMangas() {
-    List<String> images = new ArrayList<>();
-    for (MangaEntity mangaEntity : mangaNames) {
-      images.addAll(parseChapter(mangaEntity));
-    }
-    return images;
-  }
-
-  public List<String> parseChapter(MangaEntity mangaEntity) {
+  public Set<String> parseChapter(String mangaUrl) {
     try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, mangaEntity.getUrlName()))
-          .userAgent("Chrome")
+      Document document = Jsoup.connect(toUrl(BASE_URL, mangaUrl))
+          .userAgent(USER_AGENT)
           .get();
 
-      Integer numOfChapters = getNumberOfChapters(document);
+      // FIXME: potential NPE
+      String numOfChapters = getNumberOfChapters(document).toString();
       String latestChapterLink = parseLinkText(document, numOfChapters);
 
       Document latestChapter = Jsoup.connect(latestChapterLink)
-          .userAgent("Chrome")
+          .userAgent(USER_AGENT)
           .get();
 
-      return parseImages(latestChapter);
+      loadAndSaveImages(mangaUrl, numOfChapters, parseImages(latestChapter));
+      return filenames;
     } catch (IOException e) {
       LOGGER.error(e);
     }
-    return Collections.emptyList();
+    return Collections.emptySet();
   }
 
   private Integer getNumberOfChapters(Document document) {
@@ -71,12 +56,12 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .orElse(null);
   }
 
-  private String parseLinkText(Document document, Integer chapterNumber) {
+  private String parseLinkText(Document document, String chapterNumber) {
     return document.select("li > a[href]")
         .stream()
         .findFirst()
         .map(e -> e.attr("href"))
-        .filter(e -> e.contains(chapterNumber.toString()))
+        .filter(e -> e.contains(chapterNumber))
         .orElse(null);
   }
 
@@ -85,5 +70,102 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .stream()
         .map(e -> e.attr("src"))
         .toList();
+  }
+
+  private void loadAndSaveImages(String mangaName, String numOfChapters, List<String> imageUrls) {
+    Map<Pair<String, String>, Future<BufferedImage>> futureMap = new HashMap<>();
+
+    for (String imageUrl : imageUrls) {
+      Pair<String, String> fileNamePair = toPngFilename(mangaName, numOfChapters, imageUrl);
+      if (checkIfAlreadyExists(fileNamePair.getSecond())) {
+        continue;
+      }
+
+      futureMap.put(fileNamePair, asyncLoadImageContent(imageUrl));
+    }
+    getAsyncResponses(futureMap);
+  }
+
+  private Future<Boolean> writeImage(Pair<String, String> fileNamePair, Future<BufferedImage> future, boolean isIcon) {
+    BufferedImage image;
+    try {
+      image = future.get();
+    } catch (InterruptedException | ExecutionException e) {
+      LOGGER.error(e);
+      return null;
+    }
+    if (isIcon) {
+      image = resize(image, 100, 150);
+    }
+
+    filenames.add(fileNamePair.getFirst());
+    return asyncWriteImage(fileNamePair.getSecond(), image);
+  }
+
+  private void getAsyncResponses(Map<Pair<String, String>, Future<BufferedImage>> futureMap) {
+    STOP_WATCH.start();
+
+    while (futureMap.size() != 0) {
+      Iterator<Map.Entry<Pair<String, String>, Future<BufferedImage>>> it = futureMap.entrySet().iterator();
+      while (it.hasNext()) {
+        Map.Entry<Pair<String, String>, Future<BufferedImage>> entry = it.next();
+        if (entry.getValue().isDone()) {
+          writeImage(entry.getKey(), entry.getValue(), false);
+          LOGGER.info("{} is finished.", entry.getKey().getFirst());
+          it.remove();
+        }
+      }
+    }
+    stopStopWatch();
+  }
+
+  private boolean checkIfAlreadyExists(String path) {
+    File tmpDir = new File(path);
+    return tmpDir.exists();
+  }
+
+  public void parseIcon(MangaEntity entity) {
+    try {
+      Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
+          .userAgent(USER_AGENT)
+          .get();
+
+      String iconUrl = document.select("div > img[src]")
+          .stream()
+          .map(e -> e.attr("src"))
+          .findFirst()
+          .orElse(null);
+
+      // TODO: move to get png name method ??????????
+      if (iconUrl == null) {
+        return;
+      }
+
+      Pair<String, String> fileNamePair = toPngFilename(entity.getUrlName(), iconUrl);
+      if (checkIfAlreadyExists(fileNamePair.getSecond())) {
+        entity.setIconPath(fileNamePair.getFirst()); // FIXME - should not be needed here
+        return;
+      }
+
+      Future<BufferedImage> bufferedImageFuture = asyncLoadImageContent(iconUrl);
+      while (!bufferedImageFuture.isDone()) {
+      }
+      if (bufferedImageFuture.isDone()) {
+        Future<Boolean> z = writeImage(fileNamePair, bufferedImageFuture, true);
+        try {
+          assert z != null;
+          Boolean bla = z.get();
+          if (BooleanUtils.isTrue(bla) && z.isDone()) {
+            entity.setIconPath(fileNamePair.getFirst());
+          }
+        } catch (InterruptedException | ExecutionException e) {
+          LOGGER.error(e);
+        }
+      }
+      // TODO: save icon
+      //  set url to entity
+    } catch (IOException e) {
+      LOGGER.error(e);
+    }
   }
 }
