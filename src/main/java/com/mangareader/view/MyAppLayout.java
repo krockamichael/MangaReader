@@ -47,13 +47,12 @@ public class MyAppLayout extends AppLayout implements AppShellConfigurator {
     MangaEntity entity = ComponentUtil.getData(UI.getCurrent(), MangaEntity.class);
 
     if (entity != null) {
-      mangaTitle.setTitle(entity.getName() + " " + entity.getNumOfChapters());
+      mangaTitle = new H1(entity.getName() + " " + entity.getNumOfChapters());
       setStyleNames(mangaTitle.getStyle(), "160px");
       addToNavbar(mangaTitle);
     } else {
-      mangaTitle.setTitle("");
-//      remove(mangaTitle);
-//      mangaTitle = null;
+      remove(mangaTitle);
+      mangaTitle = null;
     }
   }
 
