@@ -11,7 +11,9 @@ abstract class AbstractVerticalLayout extends VerticalLayout {
   AbstractVerticalLayout() {
     setHeightFull();
     setAlignItems(Alignment.CENTER);
-    getStyle().set("margin", ZERO).set("padding", "0");
+    setMargin(false);
+    setPadding(false);
+    setSpacing(false);
   }
 
   String getImageName(String url) {

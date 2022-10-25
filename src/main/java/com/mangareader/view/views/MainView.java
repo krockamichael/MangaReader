@@ -29,7 +29,6 @@ public class MainView extends AbstractVerticalLayout {
   public MainView() {
     super();
     setupGrid();
-    setMargin(true);
   }
 
   private void setupGrid() {

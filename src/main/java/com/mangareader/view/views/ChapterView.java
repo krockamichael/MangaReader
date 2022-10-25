@@ -18,6 +18,8 @@ public class ChapterView extends AbstractVerticalLayout {
 
   public ChapterView() {
     super();
+    getStyle().set(MARGIN_TOP, "16px");
+
     mangaEntity = ComponentUtil.getData(UI.getCurrent(), MangaEntity.class);
     if (mangaEntity != null) {
       setupImageComponents();
