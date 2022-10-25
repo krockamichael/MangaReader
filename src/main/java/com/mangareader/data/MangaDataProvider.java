@@ -1,6 +1,7 @@
 package com.mangareader.data;
 
 import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.mangareader.entity.MangaEntity;
@@ -11,11 +12,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @NoArgsConstructor
-@SuppressWarnings("java:S1075")
+@SuppressWarnings("java:S1075") // CSV_FILE_PATH as customizable parameter
 public class MangaDataProvider {
 
   private static final String CSV_FILE_PATH = "C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\static\\data.csv";
@@ -43,8 +43,21 @@ public class MangaDataProvider {
   }
 
   public static void onExit() {
-    // TODO: on shutdown write items to csv
-    log.info("\n".concat(mangaEntities.stream().map(MangaEntity::getName).collect(Collectors.joining("\n"))));
+    File csvOutputFile = new File(CSV_FILE_PATH);
+    CsvMapper csvMapper = new CsvMapper();
+
+    CsvSchema csvSchema = csvMapper
+        .typedSchemaFor(MangaEntity.class)
+        .withHeader()
+        .withColumnSeparator(',')
+        .withComments();
+
+    ObjectWriter writer = csvMapper.writerFor(MangaEntity.class).with(csvSchema);
+    try {
+      writer.writeValues(csvOutputFile).writeAll(mangaEntities);
+    } catch (IOException e) {
+      log.error(e.getMessage());
+    }
   }
 
   public List<MangaEntity> getMangaEntities() {
