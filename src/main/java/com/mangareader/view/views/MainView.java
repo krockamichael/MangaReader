@@ -24,7 +24,7 @@ import com.vaadin.flow.server.StreamResource;
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout {
 
-  private static final MangaDataProvider dataProvider = new MangaDataProvider("C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\static\\data.csv");
+  private static final MangaDataProvider dataProvider = new MangaDataProvider();
 
   public MainView() {
     super();
