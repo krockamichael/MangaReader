@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class MangaDataProvider {
 
   private static final String CSV_FILE_PATH = "C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\static\\data.csv";
-  private static List<MangaEntity> mangaEntities = readMangaEntitiesFromCSV();
+  private static final List<MangaEntity> mangaEntities = readMangaEntitiesFromCSV();
 
   private static List<MangaEntity> readMangaEntitiesFromCSV() {
     // TODO: use builder and dto?
