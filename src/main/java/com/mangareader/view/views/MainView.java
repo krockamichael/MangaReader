@@ -24,7 +24,7 @@ import com.vaadin.flow.server.StreamResource;
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout {
 
-  private final transient MangaDataProvider dataProvider = new MangaDataProvider("C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\static\\data.csv");
+  private static final MangaDataProvider dataProvider = new MangaDataProvider("C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\static\\data.csv");
 
   public MainView() {
     super();
@@ -65,8 +65,8 @@ public class MainView extends AbstractVerticalLayout {
     H3 name = new H3(entity.getName());
     name.getStyle().set(MARGIN_TOP, "5px").set(MARGIN_BOTTOM, ZERO);
 
-    Component viewedChapterLink = createChapterLink(entity, "Viewed:");
-    Component currentChapterLink = createChapterLink(entity, "Current:");
+    Component viewedChapterLink = createChapterLink(entity, entity.getLastReadChapter(), "Viewed:");
+    Component currentChapterLink = createChapterLink(entity, entity.getNumOfChapters(), "Current:");
 
     VerticalLayout vl = new VerticalLayout(name, viewedChapterLink, currentChapterLink);
     vl.setPadding(false);
@@ -74,11 +74,11 @@ public class MainView extends AbstractVerticalLayout {
     return vl;
   }
 
-  private Component createChapterLink(MangaEntity entity, String caption) {
+  private Component createChapterLink(MangaEntity entity, Integer chapterNumber, String caption) {
     H4 currentChapter = new H4(caption);
     currentChapter.getStyle().set(MARGIN_TOP, ZERO);
 
-    Button chapterLink = new Button("Chapter " + entity.getLastReadChapter().toString());
+    Button chapterLink = new Button("Chapter " + chapterNumber);
     chapterLink.addClickListener(event -> {
       UI ui = UI.getCurrent();
       ComponentUtil.setData(ui, MangaEntity.class, entity);
