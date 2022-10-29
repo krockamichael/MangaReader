@@ -2,6 +2,7 @@ package com.mangareader.crawler;
 
 import com.mangareader.entity.MangaEntity;
 import com.vaadin.flow.internal.Pair;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.BooleanUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,6 +15,9 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static com.mangareader.constants.StringConstants.USER_AGENT;
+
+@Log4j2
 public class ReaperScansCrawler extends AbstractCrawler {
 
   protected static final String BASE_URL = "https://reaperscans.com/comics/";
@@ -40,7 +44,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
       loadAndSaveImages(entity.getUrlName(), numOfChapters, parseImages(latestChapter));
       return filenames;
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e);
     }
     return Collections.emptySet();
   }
@@ -92,7 +96,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
     try {
       image = future.get();
     } catch (InterruptedException | ExecutionException e) {
-      LOGGER.error(e);
+      log.error(e);
       return null;
     }
     if (isIcon) {
@@ -112,7 +116,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
         Map.Entry<Pair<String, String>, Future<BufferedImage>> entry = it.next();
         if (entry.getValue().isDone()) {
           writeImage(entry.getKey(), entry.getValue(), false);
-          LOGGER.info("{} is finished.", entry.getKey().getFirst());
+          log.info("{} is finished.", entry.getKey().getFirst());
           it.remove();
         }
       }
@@ -160,13 +164,13 @@ public class ReaperScansCrawler extends AbstractCrawler {
             entity.setIconPath(fileNamePair.getFirst());
           }
         } catch (InterruptedException | ExecutionException e) {
-          LOGGER.error(e);
+          log.error(e);
         }
       }
       // TODO: save icon
       //  set url to entity
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e);
     }
   }
 }
