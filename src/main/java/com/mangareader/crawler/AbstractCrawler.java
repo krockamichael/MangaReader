@@ -1,9 +1,8 @@
 package com.mangareader.crawler;
 
 import com.vaadin.flow.internal.Pair;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.scheduling.annotation.Async;
 
 import javax.imageio.ImageIO;
@@ -13,18 +12,20 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static com.mangareader.constants.StringConstants.USER_AGENT;
+
+@Log4j2
 public abstract class AbstractCrawler {
 
   static final StopWatch STOP_WATCH = new StopWatch();
-  static final Logger LOGGER = LogManager.getLogger(AbstractCrawler.class.getName());
-  static final String USER_AGENT = "Chrome";
-  private static final String TARGET_DOWNLOAD_DIRECTORY = "C:\\Users\\krock\\Desktop\\mangareader\\src\\main\\resources\\images\\";
+  private static final String TARGET_DOWNLOAD_DIRECTORY = Paths.get("target/classes/images/").toAbsolutePath().toString().concat("\\");
   protected final Set<String> filenames = new LinkedHashSet<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(8); // newCachedThreadPool
 
@@ -43,7 +44,7 @@ public abstract class AbstractCrawler {
     STOP_WATCH.stop();
     float timeSpent = STOP_WATCH.getTime() / 1000.f;
     if (timeSpent != 0.f) {
-      LOGGER.info(() -> String.format("Downloading images took %.2f seconds.", timeSpent));
+      log.info(String.format("Downloading images took %.2f seconds.", timeSpent));
     }
     STOP_WATCH.reset();
   }
@@ -66,7 +67,7 @@ public abstract class AbstractCrawler {
       connection.setRequestProperty("User-Agent", USER_AGENT);
       image = ImageIO.read(connection.getInputStream());
     } catch (IOException e) {
-      LOGGER.error(e);
+      log.error(e);
     }
     return image;
   }
@@ -89,6 +90,7 @@ public abstract class AbstractCrawler {
     fixedFilename = targetDir.concat(fixedFilename.replace(".jpg", ".png"));
     filenames.add(fixedFilename);
 
+    // TODO: refactor to call only once
     createDirIfNotExist(targetDir);
 
     return new Pair<>(fixedFilename, TARGET_DOWNLOAD_DIRECTORY.concat(fixedFilename));
@@ -114,7 +116,7 @@ public abstract class AbstractCrawler {
     if (!mangaDir.exists()) {
       boolean result = mangaDir.mkdirs();
       if (!result) {
-        LOGGER.error("The creation of {} directory failed.", targetDir);
+        log.error("The creation of {} directory failed.", targetDir);
       }
     }
   }
