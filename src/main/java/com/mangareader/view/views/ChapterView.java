@@ -6,12 +6,12 @@ import com.mangareader.view.MyAppLayout;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.router.PreserveOnRefresh;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
-import org.springframework.scheduling.annotation.Async;
 
-@PreserveOnRefresh
+import static com.mangareader.constants.StringConstants.MARGIN_TOP;
+
+//@PreserveOnRefresh
 @Route(value = "manga", layout = MyAppLayout.class)
 public class ChapterView extends AbstractVerticalLayout {
 
@@ -27,7 +27,6 @@ public class ChapterView extends AbstractVerticalLayout {
     }
   }
 
-  @Async
   private void setupImageComponents() {
     ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
     rsCrawler.parseChapter(mangaEntity)

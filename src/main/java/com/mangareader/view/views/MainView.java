@@ -20,6 +20,8 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 
+import static com.mangareader.constants.StringConstants.*;
+
 @PageTitle("Home")
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout {
