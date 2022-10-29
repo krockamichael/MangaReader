@@ -20,7 +20,7 @@ import static com.mangareader.constants.StringConstants.USER_AGENT;
 @Log4j2
 public class ReaperScansCrawler extends AbstractCrawler {
 
-  protected static final String BASE_URL = "https://reaperscans.com/comics/";
+  private static final String BASE_URL = "https://reaperscans.com/comics/";
 
   public ReaperScansCrawler() {
     clearFileNames();
@@ -82,7 +82,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
     for (String imageUrl : imageUrls) {
       Pair<String, String> fileNamePair = toPngFilename(mangaName, numOfChapters, imageUrl);
-      if (checkIfAlreadyExists(fileNamePair.getSecond())) {
+      if (fileExists(fileNamePair.getSecond())) {
         continue;
       }
 
@@ -124,9 +124,8 @@ public class ReaperScansCrawler extends AbstractCrawler {
     stopStopWatch();
   }
 
-  private boolean checkIfAlreadyExists(String path) {
-    File tmpDir = new File(path);
-    return tmpDir.exists();
+  private boolean fileExists(String path) {
+    return new File(path).exists();
   }
 
   public void parseIcon(MangaEntity entity) {
@@ -147,7 +146,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
       }
 
       Pair<String, String> fileNamePair = toPngFilename(entity.getUrlName(), iconUrl);
-      if (checkIfAlreadyExists(fileNamePair.getSecond())) {
+      if (fileExists(fileNamePair.getSecond())) {
         entity.setIconPath(fileNamePair.getFirst()); // FIXME - should not be needed here
         return;
       }
