@@ -4,9 +4,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 abstract class AbstractVerticalLayout extends VerticalLayout {
 
-  static final String MARGIN_TOP = "margin-top";
-  static final String MARGIN_BOTTOM = "margin-bottom";
-  static final String ZERO = "0";
 
   AbstractVerticalLayout() {
     setHeightFull();
