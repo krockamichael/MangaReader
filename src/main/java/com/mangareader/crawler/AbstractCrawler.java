@@ -4,6 +4,7 @@ import com.vaadin.flow.internal.Pair;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.scheduling.annotation.Async;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -47,10 +48,12 @@ public abstract class AbstractCrawler {
     STOP_WATCH.reset();
   }
 
+  @Async
   Future<BufferedImage> asyncLoadImageContent(String imageUrl) {
     return executor.submit(() -> getImage(imageUrl));
   }
 
+  @Async
   Future<Boolean> asyncWriteImage(String fileName, BufferedImage image) {
     return executor.submit(() -> ImageIO.write(image, "png", new File(fileName)));
   }

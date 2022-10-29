@@ -8,14 +8,16 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.BodySize;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.RouterLink;
 
-@Viewport("width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes, viewport-fit=cover")
+@Push
 @BodySize
+@Viewport("width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes, viewport-fit=cover")
 public class MyAppLayout extends AppLayout implements AppShellConfigurator {
 
   private H1 mangaTitle = new H1("");
