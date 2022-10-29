@@ -12,20 +12,19 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static com.mangareader.constants.StringConstants.TARGET_DOWNLOAD_DIR;
 import static com.mangareader.constants.StringConstants.USER_AGENT;
 
 @Log4j2
 public abstract class AbstractCrawler {
 
   static final StopWatch STOP_WATCH = new StopWatch();
-  private static final String TARGET_DOWNLOAD_DIRECTORY = Paths.get("target/classes/images/").toAbsolutePath().toString().concat("\\");
   protected final Set<String> filenames = new LinkedHashSet<>();
   private final ExecutorService executor = Executors.newFixedThreadPool(8); // newCachedThreadPool
 
@@ -93,7 +92,7 @@ public abstract class AbstractCrawler {
     // TODO: refactor to call only once
     createDirIfNotExist(targetDir);
 
-    return new Pair<>(fixedFilename, TARGET_DOWNLOAD_DIRECTORY.concat(fixedFilename));
+    return new Pair<>(fixedFilename, TARGET_DOWNLOAD_DIR.concat(fixedFilename));
   }
 
   Pair<String, String> toPngFilename(String mangaName, String filename) {
@@ -108,11 +107,11 @@ public abstract class AbstractCrawler {
 
     createDirIfNotExist(targetDir);
 
-    return new Pair<>(fixedFilename, TARGET_DOWNLOAD_DIRECTORY.concat(fixedFilename));
+    return new Pair<>(fixedFilename, TARGET_DOWNLOAD_DIR.concat(fixedFilename));
   }
 
   private void createDirIfNotExist(String targetDir) {
-    File mangaDir = new File(TARGET_DOWNLOAD_DIRECTORY.concat(targetDir));
+    File mangaDir = new File(TARGET_DOWNLOAD_DIR.concat(targetDir));
     if (!mangaDir.exists()) {
       boolean result = mangaDir.mkdirs();
       if (!result) {
