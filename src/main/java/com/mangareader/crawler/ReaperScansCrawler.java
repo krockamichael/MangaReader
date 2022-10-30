@@ -26,7 +26,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
     clearFileNames();
   }
 
-  public Set<String> parseChapter(MangaEntity entity) {
+  public List<String> parseChapter(MangaEntity entity) {
     try {
       Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
           .userAgent(USER_AGENT)
@@ -41,12 +41,11 @@ public class ReaperScansCrawler extends AbstractCrawler {
           .userAgent(USER_AGENT)
           .get();
 
-      loadAndSaveImages(entity.getUrlName(), numOfChapters, parseImages(latestChapter));
-      return filenames;
+      return parseImages(latestChapter);
     } catch (IOException e) {
       log.error(e);
     }
-    return Collections.emptySet();
+    return Collections.emptyList();
   }
 
   private Integer getNumberOfChapters(Document document) {
