@@ -1,16 +1,22 @@
 package com.mangareader;
 
 import com.mangareader.data.MangaDataProvider;
+import com.vaadin.flow.component.page.AppShellConfigurator;
+import com.vaadin.flow.component.page.BodySize;
+import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.component.page.Viewport;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.vaadin.artur.helpers.LaunchUtil;
 
 import javax.annotation.PreDestroy;
 
-@EnableAsync
+@Push
+@BodySize
 @SpringBootApplication
-public class MangareaderApplication {
+@Viewport("minimum-scale=1, user-scalable=yes, viewport-fit=cover")
+public class MangareaderApplication extends SpringBootServletInitializer implements AppShellConfigurator {
 
   public static void main(String[] args) {
     LaunchUtil.launchBrowserInDevelopmentMode(SpringApplication.run(MangareaderApplication.class, args));
