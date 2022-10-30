@@ -54,7 +54,7 @@ public class MainView extends AbstractVerticalLayout {
     image.setHeight("150px");
     image.setWidth("100px");
 
-    var ui = UI.getCurrent();
+    UI ui = UI.getCurrent();
     rsCrawler.asyncLoadIcon(entity.getUrlName())
         .addCallback(
             result -> ui.access(() -> image.setSrc(result)),
