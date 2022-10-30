@@ -16,13 +16,11 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamResource;
 
 import static com.mangareader.constants.StringConstants.*;
 
-@PageTitle("Home")
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout {
 
