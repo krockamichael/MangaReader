@@ -1,7 +1,7 @@
 package com.mangareader.view.views;
 
-import com.mangareader.crawler.ReaperScansCrawler;
 import com.mangareader.entity.MangaEntity;
+import com.mangareader.service.crawler.ReaperScansCrawler;
 import com.mangareader.view.MyAppLayout;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;

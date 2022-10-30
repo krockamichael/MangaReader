@@ -1,4 +1,4 @@
-package com.mangareader.crawler;
+package com.mangareader.service.crawler;
 
 import com.vaadin.flow.internal.Pair;
 import lombok.extern.log4j.Log4j2;
