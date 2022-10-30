@@ -5,12 +5,11 @@ import com.mangareader.view.views.MainView;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.RouterLink;
 
 @PageTitle("MangaReader")
 public class MyAppLayout extends AppLayout {
@@ -19,7 +18,7 @@ public class MyAppLayout extends AppLayout {
 
   public MyAppLayout() {
     getStyle().set("background-color", "#00000030");
-    addToNavbar(getTitle(), getTabs());
+    addToNavbar(getTitle());
   }
 
   @Override
@@ -28,14 +27,10 @@ public class MyAppLayout extends AppLayout {
     createMangaTitle();
   }
 
-  private H1 getTitle() {
-    H1 title = new H1("MangaReader");
-    title.addClickListener(event -> {
-      UI ui = UI.getCurrent();
-      ComponentUtil.setData(ui, MangaEntity.class, null);
-      ui.navigate(MainView.class);
-    });
-    setStyleNames(title.getStyle(), "0");
+  private Button getTitle() {
+    Button title = new Button("MangaReader");
+    title.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    title.addClickListener(e -> UI.getCurrent().navigate(MainView.class));
 
     return title;
   }
@@ -61,21 +56,5 @@ public class MyAppLayout extends AppLayout {
         .set("margin-bottom", "0")
         .set("margin-left", leftMargin)
         .set("position", "absolute");
-  }
-
-  private Tabs getTabs() {
-    Tabs tabs = new Tabs();
-    tabs.getStyle().set("margin", "auto");
-    tabs.add(createTab("Home"), createTab("Bookmarks"));
-
-    return tabs;
-  }
-
-  private Tab createTab(String viewName) {
-    Tab tab = new Tab(new RouterLink(viewName, MainView.class));
-    tab.getElement().addEventListener("click",
-        e -> ComponentUtil.setData(UI.getCurrent(), MangaEntity.class, null));
-
-    return tab;
   }
 }

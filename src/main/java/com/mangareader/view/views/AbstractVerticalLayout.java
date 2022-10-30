@@ -2,8 +2,10 @@ package com.mangareader.view.views;
 
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
+/**
+ * Abstract Vertical Layout component that defines the basic behaviour for view pages.
+ */
 abstract class AbstractVerticalLayout extends VerticalLayout {
-
 
   AbstractVerticalLayout() {
     setHeightFull();
@@ -11,10 +13,5 @@ abstract class AbstractVerticalLayout extends VerticalLayout {
     setMargin(false);
     setPadding(false);
     setSpacing(false);
-  }
-
-  String getImageName(String url) {
-    String[] split = url.split("\\\\");
-    return split[split.length - 1];
   }
 }
