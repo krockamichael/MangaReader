@@ -14,10 +14,12 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamResource;
+
+import java.util.concurrent.Executors;
 
 import static com.mangareader.constants.StringConstants.*;
 
@@ -25,6 +27,7 @@ import static com.mangareader.constants.StringConstants.*;
 public class MainView extends AbstractVerticalLayout {
 
   private static final MangaDataProvider dataProvider = new MangaDataProvider();
+  private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
 
   public MainView() {
     super();
@@ -37,12 +40,7 @@ public class MainView extends AbstractVerticalLayout {
     grid.addComponentColumn(this::getMainColumn).setHeader("Name").setAutoWidth(true);
 
     grid.setItems(dataProvider.getMangaEntities());
-
-    grid.addItemClickListener(event -> {
-      UI ui = UI.getCurrent();
-      ComponentUtil.setData(ui, MangaEntity.class, event.getItem());
-      ui.navigate(ChapterView.class);
-    });
+    grid.getDataCommunicator().enablePushUpdates(Executors.newCachedThreadPool());
 
     VerticalLayout vl = new VerticalLayout(grid);
     vl.setWidth(40f, Unit.PERCENTAGE);
@@ -52,12 +50,18 @@ public class MainView extends AbstractVerticalLayout {
   }
 
   private Image getIconColumn(MangaEntity entity) {
-    if (entity.getIconPath() == null || entity.getIconPath().equals("")) {
-      ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-      rsCrawler.parseIcon(entity);
-    }
-    return new Image(new StreamResource(getImageName(entity.getIconPath()),
-        () -> getClass().getResourceAsStream("/images/" + entity.getIconPath())), "");
+    Image image = new Image("", "");
+    image.setHeight("150px");
+    image.setWidth("100px");
+
+    var ui = UI.getCurrent();
+    rsCrawler.asyncLoadIcon(entity.getUrlName())
+        .addCallback(
+            result -> ui.access(() -> image.setSrc(result)),
+            err -> ui.access(() -> Notification.show("Failed to parse icon for " + entity.getName()))
+        );
+
+    return image;
   }
 
   private Component getMainColumn(MangaEntity entity) {
@@ -79,9 +83,8 @@ public class MainView extends AbstractVerticalLayout {
 
     Button chapterLink = new Button("Chapter " + chapterNumber);
     chapterLink.addClickListener(event -> {
-      UI ui = UI.getCurrent();
-      ComponentUtil.setData(ui, MangaEntity.class, entity);
-      ui.navigate(ChapterView.class);
+      ComponentUtil.setData(UI.getCurrent(), MangaEntity.class, entity);
+      UI.getCurrent().navigate(ChapterView.class);
     });
     chapterLink.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     chapterLink.getStyle().set(MARGIN_TOP, "-7px").set(MARGIN_BOTTOM, ZERO);

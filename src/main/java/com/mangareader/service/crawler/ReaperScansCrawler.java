@@ -1,4 +1,4 @@
-package com.mangareader.crawler;
+package com.mangareader.service.crawler;
 
 import com.mangareader.entity.MangaEntity;
 import com.vaadin.flow.internal.Pair;
@@ -7,6 +7,10 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.stereotype.Service;
+import org.springframework.util.concurrent.ListenableFuture;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -18,6 +22,7 @@ import java.util.concurrent.Future;
 import static com.mangareader.constants.StringConstants.USER_AGENT;
 
 @Log4j2
+@Service
 public class ReaperScansCrawler extends AbstractCrawler {
 
   private static final String BASE_URL = "https://reaperscans.com/comics/";
@@ -127,7 +132,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
     return new File(path).exists();
   }
 
-  public void parseIcon(MangaEntity entity) {
+  public void parseAndSaveIcon(MangaEntity entity) {
     try {
       Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
           .userAgent(USER_AGENT)
@@ -169,6 +174,27 @@ public class ReaperScansCrawler extends AbstractCrawler {
       //  set url to entity
     } catch (IOException e) {
       log.error(e);
+    }
+  }
+
+  @Async
+  public ListenableFuture<String> asyncLoadIcon(String mangaUrlName) {
+    try {
+      Document document = Jsoup.connect(toUrl(BASE_URL, mangaUrlName))
+          .userAgent(USER_AGENT)
+          .get();
+
+      String iconUrl = document.select("div > img[src]")
+          .stream()
+          .map(e -> e.attr("src"))
+          .findFirst()
+          .orElse(null);
+
+      assert iconUrl != null;
+      return AsyncResult.forValue(iconUrl);
+    } catch (IOException e) {
+      log.error(e);
+      return AsyncResult.forExecutionException(new RuntimeException("Error"));
     }
   }
 }
