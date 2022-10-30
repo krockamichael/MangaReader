@@ -1,12 +1,10 @@
 package com.mangareader.service.crawler;
 
-import com.mangareader.entity.MangaEntity;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
@@ -17,6 +15,9 @@ import java.util.List;
 
 import static com.mangareader.constants.StringConstants.USER_AGENT;
 
+/**
+ * Crawler implementation for ReaperScans website.
+ */
 @Log4j2
 @Service
 @NoArgsConstructor
@@ -24,18 +25,22 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   private static final String BASE_URL = "https://reaperscans.com/comics/";
 
-  public List<String> parseChapter(MangaEntity entity) {
+  @Override
+  public List<String> parseChapter(String mangaID, Integer chapterID) {
     try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
+      Document document = Jsoup.connect(toUrl(BASE_URL, mangaID))
           .userAgent(USER_AGENT)
           .get();
 
-      // FIXME: potential NPE
-      String numOfChapters = getNumberOfChapters(document).toString();
-      String latestChapterLink = parseLinkText(document, numOfChapters);
-      entity.setNumOfChapters(Integer.parseInt(numOfChapters));
+      String numOfChapters = parseLatestChapterNumber(document);
+//      entity.setNumOfChapters(Integer.parseInt(numOfChapters));
 
-      Document latestChapter = Jsoup.connect(latestChapterLink)
+      String chapterNumber = chapterID != null
+          ? chapterID.toString()
+          : numOfChapters;
+      String chapterLink = parseLinkText(document, chapterNumber);
+
+      Document latestChapter = Jsoup.connect(chapterLink)
           .userAgent(USER_AGENT)
           .get();
 
@@ -46,7 +51,8 @@ public class ReaperScansCrawler extends AbstractCrawler {
     return Collections.emptyList();
   }
 
-  private Integer getNumberOfChapters(Document document) {
+  @Override
+  protected String parseLatestChapterNumber(Document document) {
     return document.select("div > div > h1")
         .stream()
         .skip(1)
@@ -54,27 +60,28 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .map(Element::text)
         .filter(e -> !e.equals(""))
         .map(e -> e.split(" ")[0])
-        .map(Integer::parseInt)
         .orElse(null);
   }
 
-  private String parseLinkText(Document document, String chapterNumber) {
+  @Override
+  protected String parseLinkText(Document document, String chapterNumber) {
     return document.select("li > a[href]")
         .stream()
-        .findFirst()
         .map(e -> e.attr("href"))
-        .filter(e -> e.contains(chapterNumber))
+        .filter(e -> e.contains("chapter-" + chapterNumber))
+        .findFirst()
         .orElse(null);
   }
 
-  private List<String> parseImages(Document document) {
+  @Override
+  protected List<String> parseImages(Document document) {
     return document.select("main > div > p > img[src]")
         .stream()
         .map(e -> e.attr("src"))
         .toList();
   }
 
-  @Async
+  @Override
   public ListenableFuture<String> asyncLoadIcon(String mangaUrlName) {
     try {
       Document document = Jsoup.connect(toUrl(BASE_URL, mangaUrlName))
