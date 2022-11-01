@@ -7,6 +7,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 import org.springframework.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
@@ -100,5 +101,17 @@ public class ReaperScansCrawler extends AbstractCrawler {
       log.error(e);
       return AsyncResult.forExecutionException(new RuntimeException("Error"));
     }
+  }
+
+  public ListenableFuture<String> asyncLoadIconTimed(String mangaUrlName) {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+
+    ListenableFuture<String> result = asyncLoadIcon(mangaUrlName);
+
+    stopWatch.stop();
+    log.info("Icon loaded for %s in %d ms".formatted(mangaUrlName, stopWatch.getLastTaskTimeMillis()));
+
+    return result;
   }
 }

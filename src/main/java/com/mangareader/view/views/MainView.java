@@ -56,11 +56,11 @@ public class MainView extends AbstractVerticalLayout {
     image.setWidth("100px");
 
     UI ui = UI.getCurrent();
-    rsCrawler.asyncLoadIcon(entity.getUrlName())
+    new Thread(() -> rsCrawler.asyncLoadIconTimed(entity.getUrlName())
         .addCallback(
             result -> ui.access(() -> image.setSrc(result)),
             err -> ui.access(() -> Notification.show("Failed to parse icon for " + entity.getName()))
-        );
+        )).start();
 
     return image;
   }
