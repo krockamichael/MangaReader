@@ -69,8 +69,8 @@ public class MainView extends AbstractVerticalLayout {
     H3 name = new H3(entity.getName());
     name.getStyle().set(MARGIN_TOP, "5px").set(MARGIN_BOTTOM, ZERO);
 
-    Component viewedChapterLink = createChapterLink(entity, entity.getLastReadChapter(), "Viewed:");
-    Component currentChapterLink = createChapterLink(entity, entity.getNumOfChapters(), "Current:");
+    Component viewedChapterLink = createChapterLink(entity, entity.getCurrentChapterNumber(), "Current:");
+    Component currentChapterLink = createChapterLink(entity, entity.getCurrentChapterNumber(), "Latest:");
 
     VerticalLayout vl = new VerticalLayout(name, viewedChapterLink, currentChapterLink);
     vl.setPadding(false);
@@ -100,9 +100,9 @@ public class MainView extends AbstractVerticalLayout {
   }
 
   private String getChapterNumber(MangaEntity entity, String caption) {
-    Integer chapterNumber = caption.equals("Viewed:")
-        ? entity.getLastReadChapter()
-        : entity.getNumOfChapters();
+    Integer chapterNumber = caption.equals("Latest:")
+        ? entity.getLatestChapterNumber()
+        : entity.getCurrentChapterNumber();
     return chapterNumber.toString();
   }
 }
