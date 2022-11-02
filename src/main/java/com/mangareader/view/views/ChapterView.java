@@ -11,44 +11,35 @@ import com.vaadin.flow.router.*;
 import static com.mangareader.constants.StringConstants.MARGIN_TOP;
 
 @PreserveOnRefresh
-@Route(value = ":mangaID/:chapterID", layout = MyAppLayout.class)
+@Route(value = ":mangaId/:chapterId", layout = MyAppLayout.class)
 public class ChapterView extends AbstractVerticalLayout implements BeforeEnterObserver, BeforeLeaveObserver {
 
-  //  private final transient MangaEntity mangaEntity;
-  private String mangaID;
-  private Integer chapterID;
+  private transient MangaEntity mangaEntity;
+  private String mangaId;
+  private Integer chapterId;
 
   public ChapterView() {
     super();
     getStyle().set(MARGIN_TOP, "16px");
   }
 
-  @Override
-  public void beforeEnter(BeforeEnterEvent event) {
-    event.getRouteParameters()
-        .get("mangaID")
-        .ifPresent(value -> mangaID = value);
-    event.getRouteParameters()
-        .getInteger("chapterID")
-        .ifPresent(value -> chapterID = value);
-
-    if (mangaID != null) {
-      setupImageComponents();
-      setupNavigationButtons();
-    }
-  }
-
   private void setupImageComponents() {
     new ReaperScansCrawler()
-        .parseChapter(mangaID, chapterID)
+        .parseChapter(mangaId, chapterId)
         .stream()
         .map(url -> new Image(url, ""))
         .forEach(this::add);
   }
 
-  private void setupNavigationButtons() {
-    // I would need number of chapter from entity to NOT show next chapter if it does not exist
-    // How do I even add items to navigation here?
+  @Override
+  public void beforeEnter(BeforeEnterEvent event) {
+    event.getRouteParameters()
+        .getInteger("chapterId")
+        .ifPresent(value -> chapterId = value);
+
+    mangaEntity = ComponentUtil.getData(UI.getCurrent(), MangaEntity.class);
+    mangaId = mangaEntity.getUrlName();
+    setupImageComponents();
   }
 
   @Override

@@ -5,6 +5,7 @@ import com.mangareader.entity.MangaEntity;
 import com.mangareader.service.crawler.ReaperScansCrawler;
 import com.mangareader.view.MyAppLayout;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
@@ -19,7 +20,6 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 import static com.mangareader.constants.StringConstants.*;
@@ -79,24 +79,18 @@ public class MainView extends AbstractVerticalLayout {
   }
 
   private Component createChapterLink(MangaEntity entity, Integer chapterNumber, String caption) {
-    H4 currentChapter = new H4(caption);
-    currentChapter.getStyle().set(MARGIN_TOP, ZERO);
+    H4 chapterCaption = new H4(caption);
+    chapterCaption.getStyle().set(MARGIN_TOP, ZERO);
 
-    Button chapterLink = new Button("Chapter " + chapterNumber);
+    Button chapterLink = new Button("Chapter " + chapterNumber, event -> {
+      ComponentUtil.setData(UI.getCurrent(), MangaEntity.class, entity);
+      UI.getCurrent().navigate(ChapterView.class,
+          new RouteParameters("chapterID", getChapterNumber(entity, caption)));
+    });
     chapterLink.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
     chapterLink.getStyle().set(MARGIN_TOP, "-7px").set(MARGIN_BOTTOM, ZERO);
 
-    chapterLink.addClickListener(event -> {
-//      ComponentUtil.setData(UI.getCurrent(), MangaEntity.class, entity);
-      UI.getCurrent().navigate(
-          ChapterView.class,
-          new RouteParameters(
-              Map.of("chapterID", getChapterNumber(entity, caption),
-                  "mangaID", entity.getUrlName()))
-      );
-    });
-
-    return new HorizontalLayout(currentChapter, chapterLink);
+    return new HorizontalLayout(chapterCaption, chapterLink);
   }
 
   private String getChapterNumber(MangaEntity entity, String caption) {
