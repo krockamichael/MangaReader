@@ -1,5 +1,6 @@
 package com.mangareader.view.views;
 
+import com.mangareader.components.TextFieldEx;
 import com.mangareader.data.MangaDataProvider;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.service.crawler.ReaperScansCrawler;
@@ -11,13 +12,17 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
+import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.provider.SortDirection;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
@@ -47,11 +52,10 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
         .setHeader("Name").setAutoWidth(true)
         .setComparator(c -> c.getLatestChapterNumber() > c.getCurrentChapterNumber());
 
-    grid.setItems(dataProvider.getMangaEntities());
     grid.getDataCommunicator().enablePushUpdates(Executors.newCachedThreadPool());
     grid.sort(List.of(new GridSortOrder<>(mangaEntityColumn, SortDirection.DESCENDING)));
 
-    VerticalLayout vl = new VerticalLayout(grid);
+    VerticalLayout vl = new VerticalLayout(createSearch(grid), grid);
     vl.setWidth(40f, Unit.PERCENTAGE);
     setFlexGrow(0.9d, vl);
 
@@ -103,6 +107,33 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
         .set(MARGIN_LEFT, caption.equals(LATEST) ? "13px" : ZERO);
 
     return new HorizontalLayout(chapterCaption, chapterLink);
+  }
+
+  private TextFieldEx createSearch(Grid<MangaEntity> grid) {
+    GridListDataView<MangaEntity> dataView = grid.setItems(dataProvider.getMangaEntities());
+
+    TextFieldEx searchField = new TextFieldEx()
+        .withPlaceholder("Search")
+        .withWidth("50%")
+        .withStyle(MARGIN, AUTO)
+        .withPrefixComponent(new Icon(VaadinIcon.SEARCH))
+        .withValueChangeMode(ValueChangeMode.EAGER)
+        .withValueChangeListener(e -> dataView.refreshAll());
+
+    dataView.addFilter(mangaEntity -> {
+      String searchTerm = searchField.getValue().trim();
+
+      if (searchTerm.isEmpty())
+        return true;
+
+      return matchesTerm(mangaEntity.getName(), searchTerm);
+    });
+
+    return searchField;
+  }
+
+  private boolean matchesTerm(String value, String searchTerm) {
+    return value.toLowerCase().contains(searchTerm.toLowerCase());
   }
 
   @Override

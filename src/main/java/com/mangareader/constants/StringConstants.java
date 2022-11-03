@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class StringConstants {
 
+  // title
+  public static final String MANGA_READER = "MangaReader";
+
   // http
   public static final String USER_AGENT = "Chrome";
 
@@ -16,8 +19,10 @@ public abstract class StringConstants {
   public static final String CHAPTER_ID = "chapterId";
 
   // style
+  public static final String MARGIN = "margin";
   public static final String MARGIN_TOP = "margin-top";
   public static final String MARGIN_BOTTOM = "margin-bottom";
   public static final String MARGIN_LEFT = "margin-left";
+  public static final String AUTO = "auto";
   public static final String ZERO = "0";
 }
