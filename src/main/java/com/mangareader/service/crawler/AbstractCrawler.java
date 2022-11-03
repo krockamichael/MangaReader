@@ -1,5 +1,6 @@
 package com.mangareader.service.crawler;
 
+import com.mangareader.entity.MangaEntity;
 import org.jsoup.nodes.Document;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.concurrent.ListenableFuture;
@@ -11,8 +12,12 @@ import java.util.List;
  */
 public abstract class AbstractCrawler {
 
-  protected String toUrl(String baseUrl, String input) {
-    return baseUrl.concat(input);
+  protected String toUrl(String... input) {
+    StringBuilder builder = new StringBuilder();
+    for (String s : input) {
+      builder.append(s);
+    }
+    return builder.toString();
   }
 
   /**
@@ -21,11 +26,11 @@ public abstract class AbstractCrawler {
    * if no chapter number was supplied. Then we parse link text and open the
    * chapter page. Lastly we parse image src attributes and return them.
    *
-   * @param mangaID   the url name of the manga
+   * @param entity    the manga entity
    * @param chapterID the chapter number
    * @return list of image sources
    */
-  public abstract List<String> parseChapter(String mangaID, Integer chapterID);
+  public abstract List<String> parseChapter(MangaEntity entity, Integer chapterID);
 
   /**
    * On the manga overview page we parse the latest chapter number and return it.
@@ -33,7 +38,7 @@ public abstract class AbstractCrawler {
    * @param document the manga overview page
    * @return the latest chapter number
    */
-  protected abstract String parseLatestChapterNumber(Document document);
+  protected abstract Integer parseLatestChapterNumber(Document document);
 
   /**
    * The href attribute of the anchor tag that corresponds to the chapter
@@ -55,10 +60,11 @@ public abstract class AbstractCrawler {
 
   /**
    * Asynchronous method for parsing icon from manga overview pages.
+   * Also fetches the latest chapter number and updates the entity.
    *
-   * @param mangaUrlName the url name of the manga
+   * @param entity the manga entity
    * @return the img element src attribute containing the icon
    */
   @Async
-  public abstract ListenableFuture<String> asyncLoadIcon(String mangaUrlName);
+  public abstract ListenableFuture<String> asyncLoadIcon(MangaEntity entity);
 }

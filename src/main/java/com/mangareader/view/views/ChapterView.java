@@ -3,19 +3,19 @@ package com.mangareader.view.views;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.service.crawler.ReaperScansCrawler;
 import com.mangareader.view.MyAppLayout;
-import com.vaadin.flow.component.ComponentUtil;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.router.*;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 
+import static com.mangareader.constants.StringConstants.CHAPTER_ID;
 import static com.mangareader.constants.StringConstants.MARGIN_TOP;
 
-@PreserveOnRefresh
-@Route(value = ":mangaId/:chapterId", layout = MyAppLayout.class)
-public class ChapterView extends AbstractVerticalLayout implements BeforeEnterObserver, BeforeLeaveObserver {
+@Route(value = "manga/:chapterId", layout = MyAppLayout.class)
+public class ChapterView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
   private transient MangaEntity mangaEntity;
-  private String mangaId;
   private Integer chapterId;
 
   public ChapterView() {
@@ -24,8 +24,9 @@ public class ChapterView extends AbstractVerticalLayout implements BeforeEnterOb
   }
 
   private void setupImageComponents() {
+    removeAll();
     new ReaperScansCrawler()
-        .parseChapter(mangaId, chapterId)
+        .parseChapter(mangaEntity, chapterId)
         .stream()
         .map(url -> new Image(url, ""))
         .forEach(this::add);
@@ -34,16 +35,10 @@ public class ChapterView extends AbstractVerticalLayout implements BeforeEnterOb
   @Override
   public void beforeEnter(BeforeEnterEvent event) {
     event.getRouteParameters()
-        .getInteger("chapterId")
+        .getInteger(CHAPTER_ID)
         .ifPresent(value -> chapterId = value);
 
-    mangaEntity = ComponentUtil.getData(UI.getCurrent(), MangaEntity.class);
-    mangaId = mangaEntity.getUrlName();
+    mangaEntity = VaadinSession.getCurrent().getAttribute(MangaEntity.class);
     setupImageComponents();
-  }
-
-  @Override
-  public void beforeLeave(BeforeLeaveEvent event) {
-    ComponentUtil.setData(UI.getCurrent(), MangaEntity.class, null);
   }
 }

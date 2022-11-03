@@ -1,5 +1,6 @@
 package com.mangareader.service.crawler;
 
+import com.mangareader.entity.MangaEntity;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.mangareader.constants.StringConstants.USER_AGENT;
+import static java.lang.Math.ceil;
 
 /**
  * Crawler implementation for ReaperScans website.
@@ -25,21 +27,26 @@ import static com.mangareader.constants.StringConstants.USER_AGENT;
 public class ReaperScansCrawler extends AbstractCrawler {
 
   private static final String BASE_URL = "https://reaperscans.com/comics/";
+  private static final Integer CH_PER_PAGE = 32;
 
   @Override
-  public List<String> parseChapter(String mangaID, Integer chapterID) {
+  public List<String> parseChapter(MangaEntity entity, Integer chapterID) {
     try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, mangaID))
-          .userAgent(USER_AGENT)
-          .get();
+      double pageNum = ceil(((double) (entity.getLatestChapterNumber() - chapterID - 1) / CH_PER_PAGE));
 
-      String numOfChapters = parseLatestChapterNumber(document);
-//      entity.setNumOfChapters(Integer.parseInt(numOfChapters));
+      Document document;
+      if (pageNum <= 1) {
+        document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
+            .userAgent(USER_AGENT)
+            .get();
+      } else {
+        document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName(), "?page=", Double.toString(pageNum)))
+            .userAgent(USER_AGENT)
+            .get();
+      }
 
-      String chapterNumber = chapterID != null
-          ? chapterID.toString()
-          : numOfChapters;
-      String chapterLink = parseLinkText(document, chapterNumber);
+      entity.setLatestChapterNumber(parseLatestChapterNumber(document));
+      String chapterLink = parseLinkText(document, chapterID.toString());
 
       Document latestChapter = Jsoup.connect(chapterLink)
           .userAgent(USER_AGENT)
@@ -53,7 +60,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   @Override
-  protected String parseLatestChapterNumber(Document document) {
+  protected Integer parseLatestChapterNumber(Document document) {
     return document.select("div > div > h1")
         .stream()
         .skip(1)
@@ -61,6 +68,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .map(Element::text)
         .filter(e -> !e.equals(""))
         .map(e -> e.split(" ")[0])
+        .map(Integer::parseInt)
         .orElse(null);
   }
 
@@ -83,11 +91,13 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   @Override
-  public ListenableFuture<String> asyncLoadIcon(String mangaUrlName) {
+  public ListenableFuture<String> asyncLoadIcon(MangaEntity entity) {
     try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, mangaUrlName))
+      Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
           .userAgent(USER_AGENT)
           .get();
+
+      entity.setLatestChapterNumber(parseLatestChapterNumber(document));
 
       String iconUrl = document.select("div > img[src]")
           .stream()
@@ -103,14 +113,14 @@ public class ReaperScansCrawler extends AbstractCrawler {
     }
   }
 
-  public ListenableFuture<String> asyncLoadIconTimed(String mangaUrlName) {
+  public ListenableFuture<String> asyncLoadIconTimed(MangaEntity entity) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
 
-    ListenableFuture<String> result = asyncLoadIcon(mangaUrlName);
+    ListenableFuture<String> result = asyncLoadIcon(entity);
 
     stopWatch.stop();
-    log.info("Icon loaded for %s in %d ms".formatted(mangaUrlName, stopWatch.getLastTaskTimeMillis()));
+    log.info("Icon loaded for %s in %d ms".formatted(entity.getUrlName(), stopWatch.getLastTaskTimeMillis()));
 
     return result;
   }
