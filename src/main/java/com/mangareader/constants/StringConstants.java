@@ -13,7 +13,6 @@ public abstract class StringConstants {
 
   // downloads
   public static final String ABS_TARGET_DOWNLOAD_DIR = Paths.get("target/classes/images/").toAbsolutePath().toString().concat("\\");
-  public static final String REL_TARGET_DOWNLOAD_DIR = Paths.get("target/classes/images/").toString().concat("\\");
 
   // http
   public static final String USER_AGENT = "Chrome";

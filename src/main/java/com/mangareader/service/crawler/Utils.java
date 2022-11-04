@@ -29,7 +29,7 @@ public class Utils {
     return path.replace(ABS_TARGET_DOWNLOAD_DIR, "");
   }
 
-  public static BufferedImage resize(BufferedImage img, int newW, int newH) {
+  public static BufferedImage resize(BufferedImage img, int newH, int newW) {
     Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
     BufferedImage dImg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
 

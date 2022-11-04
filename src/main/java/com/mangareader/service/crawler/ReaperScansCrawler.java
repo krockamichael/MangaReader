@@ -22,8 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.mangareader.constants.StringConstants.USER_AGENT;
-import static com.mangareader.service.crawler.Utils.getDownloadPath;
-import static com.mangareader.service.crawler.Utils.getRelativePath;
+import static com.mangareader.service.crawler.Utils.*;
 import static java.lang.Math.ceil;
 
 /**
@@ -123,8 +122,6 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
       new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
 
-      log.info("OUTSIDE");
-
       assert iconUrl != null;
       return AsyncResult.forValue(iconUrl);
     } catch (IOException e) {
@@ -135,15 +132,21 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   @Async
   private void asyncDownloadIcon(MangaEntity entity, String iconUrl) {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
     log.info("Started download for %s".formatted(entity.getName()));
+
     String newIconPath = getDownloadPath(entity.getUrlName());
     writeImage(newIconPath, getImage(iconUrl));
     entity.setIconPath(getRelativePath(newIconPath));
-    log.info("Finished download for %s".formatted(newIconPath));
+
+    stopWatch.stop();
+    log.info("Finished download for %s icon in %d ms.".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
   }
 
   private void writeImage(String fileName, BufferedImage image) {
     try {
+      image = resize(image, 150, 100);
       ImageIO.write(image, "png", new File(fileName));
     } catch (IOException e) {
       log.error(e);
@@ -169,8 +172,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
     ListenableFuture<String> result = asyncLoadIcon(entity);
 
     stopWatch.stop();
-    log.info("Icon loaded for %s in %d ms".formatted(entity.getUrlName(), stopWatch.getLastTaskTimeMillis()));
-
+    log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
     return result;
   }
 }

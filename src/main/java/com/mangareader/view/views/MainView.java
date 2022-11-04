@@ -66,9 +66,8 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
 
   private Image getIconColumn(MangaEntity entity) {
     Image image = new Image("", "");
-    image.setHeight("150px");
-    image.setWidth("100px");
 
+    // icon is saved locally
     if (entity.getIconPath() != null && fileExists(entity.getIconPath())) {
       image.setSrc(new StreamResource("icon.png",
           () -> getClass().getResourceAsStream("/images/" + entity.getIconPath())));
@@ -83,6 +82,8 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
             err -> ui.access(() -> Notification.show("Failed to parse icon for " + entity.getName()))
         )).start();
 
+    image.setHeight("150px");
+    image.setWidth("100px");
     return image;
   }
 
