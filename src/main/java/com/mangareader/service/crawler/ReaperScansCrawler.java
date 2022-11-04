@@ -6,16 +6,24 @@ import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 import org.springframework.util.concurrent.ListenableFuture;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 
 import static com.mangareader.constants.StringConstants.USER_AGENT;
+import static com.mangareader.service.crawler.Utils.getDownloadPath;
+import static com.mangareader.service.crawler.Utils.getRelativePath;
 import static java.lang.Math.ceil;
 
 /**
@@ -90,6 +98,13 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .toList();
   }
 
+  /**
+   * Icon is not downloaded, download it in background, show icon from website
+   *
+   * @param entity the manga entity
+   * @return the icon url
+   */
+  @Async
   @Override
   public ListenableFuture<String> asyncLoadIcon(MangaEntity entity) {
     try {
@@ -97,6 +112,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
           .userAgent(USER_AGENT)
           .get();
 
+      // parse the latest chapter as we already have the page open
       entity.setLatestChapterNumber(parseLatestChapterNumber(document));
 
       String iconUrl = document.select("div > img[src]")
@@ -105,11 +121,44 @@ public class ReaperScansCrawler extends AbstractCrawler {
           .findFirst()
           .orElse(null);
 
+      new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
+
+      log.info("OUTSIDE");
+
       assert iconUrl != null;
       return AsyncResult.forValue(iconUrl);
     } catch (IOException e) {
       log.error(e);
-      return AsyncResult.forExecutionException(new RuntimeException("Error"));
+      return AsyncResult.forExecutionException(e);
+    }
+  }
+
+  @Async
+  private void asyncDownloadIcon(MangaEntity entity, String iconUrl) {
+    log.info("Started download for %s".formatted(entity.getName()));
+    String newIconPath = getDownloadPath(entity.getUrlName());
+    writeImage(newIconPath, getImage(iconUrl));
+    entity.setIconPath(getRelativePath(newIconPath));
+    log.info("Finished download for %s".formatted(newIconPath));
+  }
+
+  private void writeImage(String fileName, BufferedImage image) {
+    try {
+      ImageIO.write(image, "png", new File(fileName));
+    } catch (IOException e) {
+      log.error(e);
+    }
+  }
+
+  private BufferedImage getImage(String imageUrl) {
+    try {
+      URL url = new URL(imageUrl);
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestProperty("User-Agent", USER_AGENT);
+      return ImageIO.read(connection.getInputStream());
+    } catch (IOException e) {
+      log.error(e);
+      return null;
     }
   }
 

@@ -27,12 +27,14 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinSession;
 
 import java.util.List;
 import java.util.concurrent.Executors;
 
 import static com.mangareader.constants.StringConstants.*;
+import static com.mangareader.service.crawler.Utils.fileExists;
 
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout implements BeforeEnterObserver {
@@ -67,6 +69,13 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
     image.setHeight("150px");
     image.setWidth("100px");
 
+    if (entity.getIconPath() != null && fileExists(entity.getIconPath())) {
+      image.setSrc(new StreamResource("icon.png",
+          () -> getClass().getResourceAsStream("/images/" + entity.getIconPath())));
+      return image;
+    }
+
+    // icon is not downloaded, download and set to entity
     UI ui = UI.getCurrent();
     new Thread(() -> rsCrawler.asyncLoadIconTimed(entity)
         .addCallback(

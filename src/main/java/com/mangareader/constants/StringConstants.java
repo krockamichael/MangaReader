@@ -3,11 +3,17 @@ package com.mangareader.constants;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.nio.file.Paths;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class StringConstants {
 
   // title
   public static final String MANGA_READER = "MangaReader";
+
+  // downloads
+  public static final String ABS_TARGET_DOWNLOAD_DIR = Paths.get("target/classes/images/").toAbsolutePath().toString().concat("\\");
+  public static final String REL_TARGET_DOWNLOAD_DIR = Paths.get("target/classes/images/").toString().concat("\\");
 
   // http
   public static final String USER_AGENT = "Chrome";
