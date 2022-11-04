@@ -10,7 +10,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -19,7 +18,6 @@ import java.util.List;
 
 import static com.mangareader.constants.StringConstants.*;
 
-@PageTitle(MANGA_READER)
 public class MyAppLayout extends AppLayout {
 
   private HorizontalLayout buttonWrapper = new HorizontalLayout();
