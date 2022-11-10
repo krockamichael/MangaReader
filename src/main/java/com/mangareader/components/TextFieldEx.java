@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 @SuppressWarnings("java:S110")
 public class TextFieldEx extends TextField {
 
+  public TextFieldEx(String label) {
+    setLabel(label);
+  }
+
   public TextFieldEx withPlaceholder(String placeholder) {
     setPlaceholder(placeholder);
     return this;
@@ -36,6 +40,11 @@ public class TextFieldEx extends TextField {
 
   public TextFieldEx withValueChangeListener(ValueChangeListener<? super ComponentValueChangeEvent<TextField, String>> listener) {
     addValueChangeListener(listener);
+    return this;
+  }
+
+  public TextFieldEx withAutofocus(boolean autofocus) {
+    setAutofocus(autofocus);
     return this;
   }
 }

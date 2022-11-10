@@ -3,7 +3,7 @@ package com.mangareader.view;
 import com.mangareader.components.ButtonEx;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.view.views.ChapterView;
-import com.mangareader.view.views.MainView;
+import com.mangareader.view.views.main.MainView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.button.Button;
@@ -71,13 +71,13 @@ public class MyAppLayout extends AppLayout {
   }
 
   private void onNextChButtonClick(MangaEntity entity, ComboBox<String> comboBox) {
-    entity.setCurrentChapterNumber(
-        entity.getCurrentChapterNumber() + 1 > entity.getLatestChapterNumber()
-            ? entity.getLatestChapterNumber()
-            : entity.getCurrentChapterNumber() + 1);
-    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChapterNumber()));
+    entity.setCurrentChNum(
+        entity.getCurrentChNum() + 1 > entity.getLatestChNum()
+            ? entity.getLatestChNum()
+            : entity.getCurrentChNum() + 1);
+    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
     UI.getCurrent().navigate(ChapterView.class,
-        new RouteParameters(CHAPTER_ID, entity.getCurrentChapterNumber().toString()));
+        new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
   }
 
   private Button createPrevChButton(MangaEntity entity, ComboBox<String> comboBox, Button nextChButton) {
@@ -90,28 +90,28 @@ public class MyAppLayout extends AppLayout {
   }
 
   private void onPrevChButtonClick(MangaEntity entity, ComboBox<String> comboBox) {
-    entity.setCurrentChapterNumber(entity.getCurrentChapterNumber() - 1);
-    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChapterNumber()));
+    entity.setCurrentChNum(entity.getCurrentChNum() - 1);
+    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
     UI.getCurrent().navigate(ChapterView.class,
-        new RouteParameters(CHAPTER_ID, entity.getCurrentChapterNumber().toString()));
+        new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
   }
 
   private boolean isNextButtonVisible(MangaEntity entity) {
-    return entity.getCurrentChapterNumber() + 1 <= entity.getLatestChapterNumber();
+    return entity.getCurrentChNum() + 1 <= entity.getLatestChNum();
   }
 
   private ComboBox<String> createComboBox(MangaEntity entity) {
     ComboBox<String> cb = new ComboBox<>();
     List<String> items = new ArrayList<>();
-    for (int i = entity.getLatestChapterNumber(); i >= 0; i--) {
+    for (int i = entity.getLatestChNum(); i >= 0; i--) {
       items.add(CHAPTER_WITH.formatted(i));
     }
     cb.setItems(items);
-    cb.setPlaceholder(CHAPTER_WITH.formatted(entity.getCurrentChapterNumber()));
+    cb.setPlaceholder(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
     cb.addValueChangeListener(e -> {
-      entity.setCurrentChapterNumber(items.size() - items.indexOf(e.getValue()) - 1);
+      entity.setCurrentChNum(items.size() - items.indexOf(e.getValue()) - 1);
       UI.getCurrent().navigate(ChapterView.class,
-          new RouteParameters(CHAPTER_ID, entity.getCurrentChapterNumber().toString()));
+          new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
     });
     return cb;
   }

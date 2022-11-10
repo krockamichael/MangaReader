@@ -1,15 +1,27 @@
 package com.mangareader.service.crawler;
 
 import com.mangareader.entity.MangaEntity;
+import lombok.extern.log4j.Log4j2;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.util.concurrent.ListenableFuture;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
+
+import static com.mangareader.constants.StringConstants.USER_AGENT;
+import static com.mangareader.service.Utils.resize;
 
 /**
  * Abstract crawler class that defines the basic process of parsing images.
  */
+@Log4j2
 public abstract class AbstractCrawler {
 
   protected String toUrl(String... input) {
@@ -18,6 +30,38 @@ public abstract class AbstractCrawler {
       builder.append(s);
     }
     return builder.toString();
+  }
+
+  Document getDocument(String url) {
+    try {
+      return Jsoup.connect(url)
+          .userAgent(USER_AGENT)
+          .get();
+    } catch (IOException e) {
+      log.error(e);
+      return null;
+    }
+  }
+
+  void writeImage(String fileName, BufferedImage image) {
+    try {
+      image = resize(image, 150, 100);
+      ImageIO.write(image, "png", new File(fileName));
+    } catch (IOException e) {
+      log.error(e);
+    }
+  }
+
+  protected BufferedImage getImage(String imageUrl) {
+    try {
+      URL url = new URL(imageUrl);
+      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+      connection.setRequestProperty("User-Agent", USER_AGENT);
+      return ImageIO.read(connection.getInputStream());
+    } catch (IOException e) {
+      log.error(e);
+      return null;
+    }
   }
 
   /**

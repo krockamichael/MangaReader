@@ -1,4 +1,4 @@
-package com.mangareader.service.crawler;
+package com.mangareader.service;
 
 import lombok.extern.log4j.Log4j2;
 
@@ -18,14 +18,14 @@ public class Utils {
     return new File(ABS_TARGET_DOWNLOAD_DIR.concat(iconPath)).isFile();
   }
 
-  static String getDownloadPath(String mangaName) {
+  public static String getDownloadPath(String mangaName) {
     String path = ABS_TARGET_DOWNLOAD_DIR.concat(mangaName);
     if (!new File(path).mkdirs())
       log.warn("Directory %s already exists.".formatted(path));
     return path.concat("\\icon.png");
   }
 
-  static String getRelativePath(String path) {
+  public static String getRelativePath(String path) {
     return path.replace(ABS_TARGET_DOWNLOAD_DIR, "");
   }
 

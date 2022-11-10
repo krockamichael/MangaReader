@@ -9,6 +9,7 @@ import com.vaadin.flow.theme.Theme;
 import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.vaadin.artur.helpers.LaunchUtil;
 
@@ -16,7 +17,7 @@ import javax.annotation.PreDestroy;
 
 @Push
 @BodySize
-@SpringBootApplication
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @Theme(variant = Lumo.DARK)
 @Viewport("minimum-scale=1, user-scalable=yes, viewport-fit=cover")
 public class MangareaderApplication extends SpringBootServletInitializer implements AppShellConfigurator {

@@ -6,23 +6,27 @@ import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 import org.springframework.util.concurrent.ListenableFuture;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static com.mangareader.constants.StringConstants.USER_AGENT;
-import static com.mangareader.service.crawler.Utils.*;
+import static com.mangareader.service.Utils.getDownloadPath;
+import static com.mangareader.service.Utils.getRelativePath;
 import static java.lang.Math.ceil;
 
 /**
@@ -38,32 +42,17 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   @Override
   public List<String> parseChapter(MangaEntity entity, Integer chapterID) {
-    try {
-      double pageNum = ceil(((double) (entity.getLatestChapterNumber() - chapterID - 1) / CH_PER_PAGE));
+    double pageNum = ceil(((double) (entity.getLatestChNum() - chapterID - 1) / CH_PER_PAGE));
 
-      Document document;
-      if (pageNum <= 1) {
-        document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
-            .userAgent(USER_AGENT)
-            .get();
-      } else {
-        document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName(), "?page=", Double.toString(pageNum)))
-            .userAgent(USER_AGENT)
-            .get();
-      }
+    Document document = pageNum <= 1
+        ? getDocument(toUrl(BASE_URL, entity.getUrlName()))
+        : getDocument(toUrl(BASE_URL, entity.getUrlName(), "?page=", Double.toString(pageNum)));
 
-      entity.setLatestChapterNumber(parseLatestChapterNumber(document));
-      String chapterLink = parseLinkText(document, chapterID.toString());
+    entity.setLatestChNum(parseLatestChapterNumber(document));
+    String chapterLink = parseLinkText(document, chapterID.toString());
+    Document latestChapter = getDocument(chapterLink);
 
-      Document latestChapter = Jsoup.connect(chapterLink)
-          .userAgent(USER_AGENT)
-          .get();
-
-      return parseImages(latestChapter);
-    } catch (IOException e) {
-      log.error(e);
-    }
-    return Collections.emptyList();
+    return parseImages(latestChapter);
   }
 
   @Override
@@ -97,6 +86,18 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .toList();
   }
 
+  //TODO: can this be implemented in abstract crawler and the asyncLoadIcon be overridden in subclasses?
+  public ListenableFuture<String> asyncLoadIconTimed(MangaEntity entity) {
+    StopWatch stopWatch = new StopWatch();
+    stopWatch.start();
+
+    ListenableFuture<String> result = asyncLoadIcon(entity);
+
+    stopWatch.stop();
+    log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
+    return result;
+  }
+
   /**
    * Icon is not downloaded, download it in background, show icon from website
    *
@@ -106,30 +107,21 @@ public class ReaperScansCrawler extends AbstractCrawler {
   @Async
   @Override
   public ListenableFuture<String> asyncLoadIcon(MangaEntity entity) {
-    try {
-      Document document = Jsoup.connect(toUrl(BASE_URL, entity.getUrlName()))
-          .userAgent(USER_AGENT)
-          .get();
+    Document document = getDocument(toUrl(BASE_URL, entity.getUrlName()));
+    entity.setLatestChNum(parseLatestChapterNumber(document));
+    String iconUrl = document.select("div > img[src]")
+        .stream()
+        .map(e -> e.attr("src"))
+        .findFirst()
+        .orElse(null);
 
-      // parse the latest chapter as we already have the page open
-      entity.setLatestChapterNumber(parseLatestChapterNumber(document));
+    new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
 
-      String iconUrl = document.select("div > img[src]")
-          .stream()
-          .map(e -> e.attr("src"))
-          .findFirst()
-          .orElse(null);
-
-      new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
-
-      assert iconUrl != null;
-      return AsyncResult.forValue(iconUrl);
-    } catch (IOException e) {
-      log.error(e);
-      return AsyncResult.forExecutionException(e);
-    }
+    assert iconUrl != null;
+    return AsyncResult.forValue(iconUrl);
   }
 
+  //TODO: is this not also a super method?
   @Async
   private void asyncDownloadIcon(MangaEntity entity, String iconUrl) {
     StopWatch stopWatch = new StopWatch();
@@ -144,35 +136,77 @@ public class ReaperScansCrawler extends AbstractCrawler {
     log.info("Finished download for %s icon in %d ms.".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
   }
 
-  private void writeImage(String fileName, BufferedImage image) {
-    try {
-      image = resize(image, 150, 100);
-      ImageIO.write(image, "png", new File(fileName));
-    } catch (IOException e) {
-      log.error(e);
-    }
-  }
-
-  private BufferedImage getImage(String imageUrl) {
-    try {
-      URL url = new URL(imageUrl);
-      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      connection.setRequestProperty("User-Agent", USER_AGENT);
-      return ImageIO.read(connection.getInputStream());
-    } catch (IOException e) {
-      log.error(e);
-      return null;
-    }
-  }
-
-  public ListenableFuture<String> asyncLoadIconTimed(MangaEntity entity) {
+  @Async
+  public ListenableFuture<Integer> fetchLatestChapterNumber(MangaEntity entity) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
 
-    ListenableFuture<String> result = asyncLoadIcon(entity);
+    Document document = getDocument(toUrl(BASE_URL, entity.getUrlName()));
 
     stopWatch.stop();
-    log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
-    return result;
+    log.info("Latest chapter update for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
+
+    assert document != null;
+    return AsyncResult.forValue(parseLatestChapterNumber(document));
+  }
+
+  // https://curlconverter.com/java/
+  public Map<String, String> getMangaUrl(String value, PageRequest pageRequest) {
+    if (value == null)
+      return Collections.emptyMap();
+
+    try {
+      HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
+      httpConn.setRequestMethod("POST");
+
+      httpConn.setRequestProperty("content-type", "application/json");
+      httpConn.setRequestProperty("referer", "https://reaperscans.com/");
+      httpConn.setRequestProperty("user-agent", "Chrome");
+      httpConn.setRequestProperty("x-livewire", "true");
+
+      httpConn.setDoOutput(true);
+      OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
+      writer.write("{\"fingerprint\":{\"id\":\"olJuYSFBkawm5K7qqSJk\",\"name\":\"frontend.dtddzhx-ghvjlgrpt\",\"locale\":\"en\",\"path\":\"/\",\"method\":\"GET\",\"v\":\"acj\"},\"serverMemo\":{\"children\":[],\"errors\":[],\"htmlHash\":\"5a182466\",\"data\":{\"query\":\"\",\"comics\":[],\"novels\":[]},\"dataMeta\":[],\"checksum\":\"ecf28746c7fd2589eebf011c40e8c26656c8e73c52c47714f79d35e433a3b834\"},\"updates\":[{\"type\":\"syncInput\",\"payload\":{\"id\":\"enwxj\",\"name\":\"query\"," +
+          "\"value\":\"%s\"}}]}".formatted(value));
+      writer.flush();
+      writer.close();
+      httpConn.getOutputStream().close();
+
+      InputStream responseStream = httpConn.getResponseCode() / 100 == 2
+          ? httpConn.getInputStream()
+          : httpConn.getErrorStream();
+      Scanner s = new Scanner(responseStream).useDelimiter("\\A");
+      String response = s.hasNext() ? s.next() : "";
+
+      Document document = Jsoup.parse(response, "UTF-8");
+      List<String> urls = parseResponseLinks(document);
+      List<String> names = parseResponseNames(document);
+
+      return IntStream.range(0, urls.size())
+          .boxed()
+          .collect(Collectors.toMap(urls::get, names::get));
+    } catch (IOException e) {
+      log.error(e);
+      return Collections.emptyMap();
+    }
+  }
+
+  private List<String> parseResponseLinks(Document document) {
+    return document
+        .select("a[href*=comics]")
+        .stream()
+        .map(e -> e.attr("href"))
+        .distinct()
+        .map(e -> e.split("/")[4].replace("\\\"", ""))
+        .toList();
+  }
+
+  private List<String> parseResponseNames(Document document) {
+    return document
+        .select("a[href*=comics] > div > div > p[text-neutral-200]")
+        .stream()
+        .map(Element::text)
+        .map(e -> e.trim().split("\\\\n ")[1])
+        .toList();
   }
 }

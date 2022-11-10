@@ -5,9 +5,9 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 /**
  * Abstract Vertical Layout component that defines the basic behaviour for view pages.
  */
-abstract class AbstractVerticalLayout extends VerticalLayout {
+public abstract class AbstractVerticalLayout extends VerticalLayout {
 
-  AbstractVerticalLayout() {
+  protected AbstractVerticalLayout() {
     setHeightFull();
     setAlignItems(Alignment.CENTER);
     setMargin(false);

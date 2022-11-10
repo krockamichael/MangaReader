@@ -30,4 +30,5 @@ public abstract class StringConstants {
   public static final String MARGIN_LEFT = "margin-left";
   public static final String AUTO = "auto";
   public static final String ZERO = "0";
+  public static final String SET_PROPERTY_IN_OVERLAY_JS = "this.$.overlay.$.overlay.style[$0]=$1";
 }
