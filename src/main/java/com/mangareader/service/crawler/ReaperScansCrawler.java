@@ -1,6 +1,7 @@
 package com.mangareader.service.crawler;
 
 import com.mangareader.entity.MangaEntity;
+import com.mangareader.entity.SearchResultDto;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
@@ -18,12 +19,10 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.mangareader.service.Utils.getDownloadPath;
 import static com.mangareader.service.Utils.getRelativePath;
@@ -151,9 +150,9 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   // https://curlconverter.com/java/
-  public Map<String, String> getMangaUrl(String value, PageRequest pageRequest) {
+  public List<SearchResultDto> getMangaUrl(String value, PageRequest pageRequest) {
     if (value == null)
-      return Collections.emptyMap();
+      return Collections.emptyList();
 
     try {
       HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
@@ -181,13 +180,18 @@ public class ReaperScansCrawler extends AbstractCrawler {
       Document document = Jsoup.parse(response, "UTF-8");
       List<String> urls = parseResponseLinks(document);
       List<String> names = parseResponseNames(document);
+      List<String> icons = parsResponseIcons(document);
+      List<Integer> latestChapters = parseResponseLatestChapters(document);
 
-      return IntStream.range(0, urls.size())
-          .boxed()
-          .collect(Collectors.toMap(urls::get, names::get));
+      List<SearchResultDto> resultDtos = new ArrayList<>();
+      for (int i = 0; i < urls.size(); i++) {
+        resultDtos.add(new SearchResultDto(names.get(i), urls.get(i), icons.get(i), latestChapters.get(i)));
+      }
+
+      return resultDtos;
     } catch (IOException e) {
       log.error(e);
-      return Collections.emptyMap();
+      return Collections.emptyList();
     }
   }
 
@@ -207,6 +211,25 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .stream()
         .map(Element::text)
         .map(e -> e.trim().split("\\\\n ")[1])
+        .toList();
+  }
+
+  private List<String> parsResponseIcons(Document document) {
+    return document
+        .select("a[href*=comics] > div > img[src]")
+        .stream()
+        .map(e -> e.attr("src"))
+        .map(e -> e.replace("\\\"", "").replace("/", ""))
+        .toList();
+  }
+
+  private List<Integer> parseResponseLatestChapters(Document document) {
+    return document
+        .select("a[href*=comics] > div > div > p > span > span > i > span > i")
+        .stream()
+        .map(Element::text)
+        .map(e -> e.split(" ")[1])
+        .map(Integer::parseInt)
         .toList();
   }
 }

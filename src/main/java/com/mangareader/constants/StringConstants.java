@@ -28,7 +28,17 @@ public abstract class StringConstants {
   public static final String MARGIN_TOP = "margin-top";
   public static final String MARGIN_BOTTOM = "margin-bottom";
   public static final String MARGIN_LEFT = "margin-left";
+  public static final String PADDING = "padding";
   public static final String AUTO = "auto";
   public static final String ZERO = "0";
   public static final String SET_PROPERTY_IN_OVERLAY_JS = "this.$.overlay.$.overlay.style[$0]=$1";
+
+  // image sizes
+  public static final int INT_GRID_IMG_HEIGHT = 150;
+  public static final int INT_GRID_IMG_WIDTH = 100;
+  public static final String GRID_IMG_HEIGHT = INT_GRID_IMG_HEIGHT + "px";
+  public static final String GRID_IMG_WIDTH = INT_GRID_IMG_WIDTH + "px";
+  public static final String SEARCH_IMG_HEIGHT = "100px";
+  public static final String SEARCH_IMG_WIDTH = "70px";
+  public static final String SEARCH_HL_HEIGHT = "90px";
 }
