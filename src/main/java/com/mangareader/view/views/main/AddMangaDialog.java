@@ -3,6 +3,7 @@ package com.mangareader.view.views.main;
 import com.mangareader.components.ButtonEx;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.entity.ScansEnum;
+import com.mangareader.entity.SearchResultDto;
 import com.mangareader.service.crawler.ReaperScansCrawler;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
@@ -15,9 +16,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.binder.Binder;
 import org.springframework.data.domain.PageRequest;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.mangareader.constants.StringConstants.SET_PROPERTY_IN_OVERLAY_JS;
 
@@ -26,7 +25,6 @@ class AddMangaDialog extends Dialog {
   private final transient Grid<MangaEntity> grid;
   private final transient List<MangaEntity> entityList;
   private final transient MangaEntity entity = new MangaEntity();
-  private Map<String, String> resultList = new HashMap<>();
 
   AddMangaDialog(Grid<MangaEntity> grid, List<MangaEntity> entityList) {
     this.grid = grid;
@@ -53,20 +51,22 @@ class AddMangaDialog extends Dialog {
     Binder<MangaEntity> binder = new Binder<>();
     ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
 
-    ComboBox<String> comboBox = new ComboBox<>("Name");
+    ComboBox<SearchResultDto> comboBox = new ComboBox<>("Name");
+    comboBox.setItemLabelGenerator(SearchResultDto::name);
     comboBox.setAllowCustomValue(true);
     comboBox.setAutofocus(true);
     comboBox.setItems(
-        query -> {
-          resultList = rsCrawler.getMangaUrl(
-              query.getFilter().orElse(null),
-              PageRequest.of(query.getPage(), query.getPageSize()));
-          return resultList.values().stream();
-        }
+        query -> rsCrawler.getMangaUrl(
+                query.getFilter().orElse(null),
+                PageRequest.of(query.getPage(), query.getPageSize()))
+            .stream()
     );
     comboBox.addValueChangeListener(e -> {
-      entity.setName(e.getValue());
-      entity.setUrlName(resultList.get(e.getValue()));
+      entity.setName(e.getValue().name());
+      entity.setUrlName(e.getValue().urlName());
+      entity.setCurrentChNum(1);
+      entity.setLatestChNum(e.getValue().latestChNum());
+      entity.setIconPath(e.getValue().icon());
     });
 
     ComboBox<ScansEnum> scansCombo = new ComboBox<>("Scans");

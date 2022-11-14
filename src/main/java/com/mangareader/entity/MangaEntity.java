@@ -11,7 +11,6 @@ import lombok.Setter;
 @Setter
 @JsonPropertyOrder({"name", "urlName", "scansName", "scansUrlName", "latestChNum", "currentChNum", "iconPath"})
 public class MangaEntity {
-
   private String name;
   private String urlName;
   private String scansName;
@@ -19,9 +18,4 @@ public class MangaEntity {
   private Integer latestChNum;
   private Integer currentChNum;
   private String iconPath;
-
-  public MangaEntity() {
-    latestChNum = 1;
-    currentChNum = 1;
-  }
 }

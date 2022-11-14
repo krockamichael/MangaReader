@@ -15,7 +15,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 
-import static com.mangareader.constants.StringConstants.USER_AGENT;
+import static com.mangareader.constants.StringConstants.*;
 import static com.mangareader.service.Utils.resize;
 
 /**
@@ -45,7 +45,7 @@ public abstract class AbstractCrawler {
 
   void writeImage(String fileName, BufferedImage image) {
     try {
-      image = resize(image, 150, 100);
+      image = resize(image, INT_GRID_IMG_HEIGHT, INT_GRID_IMG_WIDTH);
       ImageIO.write(image, "png", new File(fileName));
     } catch (IOException e) {
       log.error(e);
