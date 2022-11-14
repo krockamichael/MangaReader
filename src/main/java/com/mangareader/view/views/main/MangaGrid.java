@@ -73,12 +73,15 @@ class MangaGrid extends Grid<MangaEntity> {
     UI ui = UI.getCurrent();
     new Thread(() -> new ReaperScansCrawler().asyncLoadIconTimed(entity)
         .addCallback(
-            result -> ui.access(() -> image.setSrc(result)),
+            result -> ui.access(() -> {
+              getDataProvider().refreshItem(entity);  // refresh so newly set latest chapter is shown
+              image.setSrc(result);
+            }),
             err -> ui.access(() -> Notification.show("Failed to parse icon for " + entity.getName()))
         )).start();
 
-    image.setHeight("150px");
-    image.setWidth("100px");
+    image.setHeight(GRID_IMG_HEIGHT);
+    image.setWidth(GRID_IMG_WIDTH);
     return image;
   }
 
