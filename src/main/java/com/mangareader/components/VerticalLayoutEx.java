@@ -1,6 +1,8 @@
 package com.mangareader.components;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasElement;
+import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
@@ -27,6 +29,31 @@ public class VerticalLayoutEx extends VerticalLayout {
 
   public VerticalLayoutEx withStyle(String styleName, String styleValue) {
     getStyle().set(styleName, styleValue);
+    return this;
+  }
+
+  public VerticalLayoutEx withSizeFull() {
+    setSizeFull();
+    return this;
+  }
+
+  public VerticalLayoutEx withHeightFull() {
+    setHeightFull();
+    return this;
+  }
+
+  public VerticalLayoutEx withWidth(float width, Unit unit) {
+    setWidth(width, unit);
+    return this;
+  }
+
+  public VerticalLayoutEx withFlexGrow(double flexGrow, HasElement... elementContainer) {
+    setFlexGrow(flexGrow, elementContainer);
+    return this;
+  }
+
+  public VerticalLayoutEx withSelfFlexGrow(double flexGrow) {
+    setFlexGrow(flexGrow, this);
     return this;
   }
 }

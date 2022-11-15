@@ -1,7 +1,6 @@
 package com.mangareader.entity;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +9,6 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@Builder(toBuilder = true)
 @JsonPropertyOrder({"name", "urlName", "scansName", "scansUrlName", "latestChNum", "currentChNum", "iconPath"})
 public class MangaEntity {
   private String name;
@@ -18,6 +16,6 @@ public class MangaEntity {
   private String scansName;
   private String scansUrlName;
   private Integer latestChNum;
-  private Integer currentChNum;
+  private Integer currentChNum = 1;
   private String iconPath;
 }

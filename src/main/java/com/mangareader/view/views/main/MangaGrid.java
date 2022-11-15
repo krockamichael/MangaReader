@@ -1,5 +1,7 @@
 package com.mangareader.view.views.main;
 
+import com.mangareader.components.ImageEx;
+import com.mangareader.components.VerticalLayoutEx;
 import com.mangareader.data.MangaDataProvider;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.service.crawler.ReaperScansCrawler;
@@ -14,15 +16,14 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.RouteParameters;
@@ -36,9 +37,7 @@ import java.util.stream.Stream;
 import static com.mangareader.constants.StringConstants.*;
 import static com.mangareader.service.Utils.fileExists;
 
-class MangaGrid extends Grid<MangaEntity> {
-
-  private static final MangaDataProvider dataProvider = new MangaDataProvider();
+public class MangaGrid extends Grid<MangaEntity> {
 
   MangaGrid() {
     addComponentColumn(this::getIconColumn).setHeader("Icon").setWidth("110px").setFlexGrow(0);
@@ -52,15 +51,17 @@ class MangaGrid extends Grid<MangaEntity> {
 
     getDataCommunicator().enablePushUpdates(Executors.newCachedThreadPool());
     sort(List.of(new GridSortOrder<>(mangaEntityColumn, SortDirection.DESCENDING)));
-    setAllRowsVisible(true);
+    setAllRowsVisible(true);  // TODO: change in future
+
+    setItems(new MangaDataProvider().getMangaEntities());
   }
 
   private static ComponentRenderer<MangaDetailsFormLayout, MangaEntity> createMangaDetailsRenderer() {
     return new ComponentRenderer<>(MangaDetailsFormLayout::new, MangaDetailsFormLayout::setManga);
   }
 
-  private Image getIconColumn(MangaEntity entity) {
-    Image image = new Image();
+  private ImageEx getIconColumn(MangaEntity entity) {
+    ImageEx image = new ImageEx().withHeightAndWidth(GRID_IMG_HEIGHT, GRID_IMG_WIDTH);
 
     // icon is saved locally
     if (entity.getIconPath() != null && fileExists(entity.getIconPath())) {
@@ -73,15 +74,10 @@ class MangaGrid extends Grid<MangaEntity> {
     UI ui = UI.getCurrent();
     new Thread(() -> new ReaperScansCrawler().asyncLoadIconTimed(entity)
         .addCallback(
-            result -> ui.access(() -> {
-              getDataProvider().refreshItem(entity);  // refresh so newly set latest chapter is shown
-              image.setSrc(result);
-            }),
+            result -> ui.access(() -> image.setSrc(result)),
             err -> ui.access(() -> Notification.show("Failed to parse icon for " + entity.getName()))
         )).start();
 
-    image.setHeight(GRID_IMG_HEIGHT);
-    image.setWidth(GRID_IMG_WIDTH);
     return image;
   }
 
@@ -92,10 +88,7 @@ class MangaGrid extends Grid<MangaEntity> {
     Component currentChapterLink = createChapterLink(entity, entity.getCurrentChNum(), CURRENT);
     Component latestChapterLink = createChapterLink(entity, entity.getLatestChNum(), LATEST);
 
-    VerticalLayout vl = new VerticalLayout(name, currentChapterLink, latestChapterLink);
-    vl.setPadding(false);
-
-    return vl;
+    return new VerticalLayoutEx(name, currentChapterLink, latestChapterLink).withPadding(false);
   }
 
   private Component getActionsColumn(MangaEntity entity) {
@@ -105,17 +98,15 @@ class MangaGrid extends Grid<MangaEntity> {
     Icon deleteIcon = new Icon(VaadinIcon.TRASH);
     deleteIcon.addClickListener(e ->
         new DeleteConfirmDialog("Confirmation", "Are you sure you want to delete this item?", () -> {
-          dataProvider.getMangaEntities().remove(entity);
-          getDataProvider().refreshAll();
+          removeItem(entity);
         }).open());
 
     Stream.of(editIcon, deleteIcon).forEach(icon -> {
       icon.setSize("20px");
       icon.getStyle().set(MARGIN, AUTO);
     });
-    VerticalLayout vl = new VerticalLayout(editIcon, deleteIcon);
-    vl.setSizeFull();
-    return vl;
+
+    return new VerticalLayoutEx(editIcon, deleteIcon).withSizeFull();
   }
 
   private Component createChapterLink(MangaEntity entity, Integer chapterNumber, String caption) {
@@ -135,6 +126,32 @@ class MangaGrid extends Grid<MangaEntity> {
         .set(MARGIN_LEFT, caption.equals(LATEST) ? "13px" : ZERO);
 
     return new HorizontalLayout(chapterCaption, chapterLink);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public ListDataProvider<MangaEntity> getDataProvider() {
+    return (ListDataProvider<MangaEntity>) super.getDataProvider();
+  }
+
+  /**
+   * Add item to grid and data provider entity list.
+   *
+   * @param entity the entity to be added
+   */
+  void addItem(MangaEntity entity) {
+    getDataProvider().getItems().add(entity);
+    getDataProvider().refreshAll();
+  }
+
+  /**
+   * Remove item from grid and data provider entity list.
+   *
+   * @param entity the entity to be removed
+   */
+  public void removeItem(MangaEntity entity) {
+    getDataProvider().getItems().remove(entity);
+    getDataProvider().refreshAll();
   }
 
   private static class DeleteConfirmDialog extends ConfirmDialog {

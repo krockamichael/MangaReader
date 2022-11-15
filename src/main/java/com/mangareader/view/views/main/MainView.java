@@ -1,21 +1,19 @@
 package com.mangareader.view.views.main;
 
 import com.mangareader.components.ButtonEx;
+import com.mangareader.components.HorizontalLayoutEx;
 import com.mangareader.components.TextFieldEx;
-import com.mangareader.data.MangaDataProvider;
+import com.mangareader.components.VerticalLayoutEx;
 import com.mangareader.entity.MangaEntity;
 import com.mangareader.service.crawler.ReaperScansCrawler;
 import com.mangareader.view.MyAppLayout;
 import com.mangareader.view.views.AbstractVerticalLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Unit;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -28,7 +26,6 @@ import static com.mangareader.constants.StringConstants.MARGIN;
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
-  private static final MangaDataProvider dataProvider = new MangaDataProvider();
   private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
 
   public MainView() {
@@ -37,26 +34,25 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
   }
 
   private void setupContent() {
-    Grid<MangaEntity> grid = new MangaGrid();
+    MangaGrid grid = new MangaGrid();
     TextFieldEx search = createSearch(grid);
     ButtonEx updateBtn = createUpdateButton(grid);
     ButtonEx addBtn = createAddButton(grid);
 
-    HorizontalLayout hl = new HorizontalLayout(updateBtn, addBtn, search);
-    hl.setFlexGrow(1f, search);
-    hl.setWidthFull();
+    HorizontalLayoutEx hl = new HorizontalLayoutEx(updateBtn, addBtn, search)
+        .withFlexGrow(1d, search)
+        .withWidthFull();
 
-    VerticalLayout vl = new VerticalLayout(hl, grid);
-    vl.setHeightFull();
-    vl.setWidth(40f, Unit.PERCENTAGE);
-    setFlexGrow(0.9d, vl);
+    VerticalLayoutEx vl = new VerticalLayoutEx(hl, grid)
+        .withHeightFull()
+        .withWidth(40f, Unit.PERCENTAGE)
+        .withSelfFlexGrow(0.9d);
 
     add(vl);
   }
 
-
-  private TextFieldEx createSearch(Grid<MangaEntity> grid) {
-    GridListDataView<MangaEntity> dataView = grid.setItems(dataProvider.getMangaEntities());
+  private TextFieldEx createSearch(MangaGrid grid) {
+    GridListDataView<MangaEntity> dataView = grid.getListDataView();
 
     TextFieldEx searchField = new TextFieldEx()
         .withPlaceholder("Search")
@@ -68,7 +64,6 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
 
     dataView.addFilter(mangaEntity -> {
       String searchTerm = searchField.getValue().trim();
-
       if (searchTerm.isEmpty())
         return true;
 
@@ -82,26 +77,25 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
     return value.toLowerCase().contains(searchTerm.toLowerCase());
   }
 
-  private ButtonEx createUpdateButton(Grid<MangaEntity> grid) {
+  private ButtonEx createUpdateButton(MangaGrid grid) {
     UI ui = UI.getCurrent();
     return new ButtonEx("Update")
-        .withClickListener(e -> {
-          for (MangaEntity entity : dataProvider.getMangaEntities()) {
-            new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
+        .withClickListener(e -> grid.getDataProvider()
+            .getItems()
+            .forEach(entity -> new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
                 .addCallback(
                     result -> {
                       entity.setLatestChNum(result);
                       ui.access(() -> grid.getDataProvider().refreshItem(entity));
                     },
                     err -> ui.access(() -> Notification.show("Failed to parse latest chapter for " + entity.getName()))
-                )).start();
-          }
-        });
+                )
+            ).start()));
   }
 
-  private ButtonEx createAddButton(Grid<MangaEntity> grid) {
+  private ButtonEx createAddButton(MangaGrid grid) {
     return new ButtonEx("Add")
-        .withClickListener(e -> new AddMangaDialog(grid, dataProvider.getMangaEntities()).open());
+        .withClickListener(e -> new AddMangaDialog(grid).open());
   }
 
   @Override
