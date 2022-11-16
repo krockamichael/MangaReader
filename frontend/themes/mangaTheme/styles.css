@@ -1,0 +1,7 @@
+@import url('./components/vaadin-grid.css');
+
+.sidebar-grid {
+    width: 102px;
+    margin: auto;
+    margin-left: -30%;
+}
