@@ -1,10 +1,10 @@
 package com.mangareader.ui.component;
 
-import com.mangareader.backend.data.entity.DtoEntityMapper;
+import com.mangareader.backend.data.DtoEntityMapper;
+import com.mangareader.backend.data.dto.SearchResultDto;
 import com.mangareader.backend.data.entity.MangaEntity;
 import com.mangareader.backend.data.entity.ScansEnum;
-import com.mangareader.backend.data.entity.SearchResultDto;
-import com.mangareader.backend.data.service.crawler.ReaperScansCrawler;
+import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.component.extension.*;
 import com.mangareader.ui.component.grid.MangaGrid;
 import com.vaadin.flow.component.ClickEvent;

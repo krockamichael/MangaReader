@@ -1,4 +1,4 @@
-package com.mangareader.backend.data.service.crawler;
+package com.mangareader.backend.service.crawler;
 
 import com.mangareader.backend.data.entity.MangaEntity;
 import com.mangareader.backend.data.service.Utils;
