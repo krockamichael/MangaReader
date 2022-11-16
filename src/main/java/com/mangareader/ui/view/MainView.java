@@ -1,6 +1,7 @@
 package com.mangareader.ui.view;
 
 import com.mangareader.backend.entity.Manga;
+import com.mangareader.backend.service.MangaService;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
 import com.mangareader.ui.component.AddMangaDialog;
@@ -29,18 +30,21 @@ import static com.mangareader.backend.data.Constants.MARGIN;
 public class MainView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
   private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
+  private final transient MangaService mangaService;
+  private final MangaGrid grid;
 
-  public MainView() {
+  public MainView(MangaService mangaService) {
     super();
+    this.mangaService = mangaService;
+    grid = new MangaGrid(mangaService.findAll());
     setupContent();
   }
 
   private void setupContent() {
-    MangaGrid grid = new MangaGrid();
-    TextFieldEx search = createSearch(grid);
-    ButtonEx updateBtn = createUpdateButton(grid);
-    ButtonEx addBtn = createAddButton(grid);
-    NewMangaSidebar sidebar = new NewMangaSidebar();
+    TextFieldEx search = createSearch();
+    ButtonEx updateBtn = createUpdateButton();
+    ButtonEx addBtn = createAddButton();
+    NewMangaSidebar sidebar = new NewMangaSidebar(mangaService.findAll());
 
     HorizontalLayoutEx hl = new HorizontalLayoutEx(updateBtn, addBtn, search)
         .withFlexGrow(1d, search)
@@ -59,7 +63,11 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
     add(hl2);
   }
 
-  private TextFieldEx createSearch(MangaGrid grid) {
+  public void updateGrid(String searchTerm) {
+    grid.setItems(mangaService.findAll(searchTerm));
+  }
+
+  private TextFieldEx createSearch() {
     GridListDataView<Manga> dataView = grid.getListDataView();
 
     TextFieldEx searchField = new TextFieldEx()
@@ -85,7 +93,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
     return value.toLowerCase().contains(searchTerm.toLowerCase());
   }
 
-  private ButtonEx createUpdateButton(MangaGrid grid) {
+  private ButtonEx createUpdateButton() {
     UI ui = UI.getCurrent();
     return new ButtonEx("Update")
         .withClickListener(e -> grid.getDataProvider()
@@ -101,7 +109,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
             ).start()));
   }
 
-  private ButtonEx createAddButton(MangaGrid grid) {
+  private ButtonEx createAddButton() {
     return new ButtonEx("Add")
         .withClickListener(e -> new AddMangaDialog(grid).open());
   }

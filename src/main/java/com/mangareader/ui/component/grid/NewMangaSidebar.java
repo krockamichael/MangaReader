@@ -1,14 +1,14 @@
 package com.mangareader.ui.component.grid;
 
-import com.mangareader.backend.data.MangaDataProvider;
+import com.mangareader.backend.entity.Manga;
+
+import java.util.List;
 
 public class NewMangaSidebar extends AbstractGrid {
 
-  public NewMangaSidebar() {
+  public NewMangaSidebar(List<Manga> mangaList) {
     addIconColumn();
-    setItems(new MangaDataProvider().getMangaEntities());
-//    getStyle().set(MARGIN, ZERO);
-//    getStyle().set(MARGIN_TOP, AUTO).set(MARGIN_BOTTOM, AUTO);
+    setItems(mangaList);
     setAllRowsVisible(true);
     setClassName("sidebar-grid");
   }

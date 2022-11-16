@@ -1,6 +1,5 @@
 package com.mangareader.ui.component.grid;
 
-import com.mangareader.backend.data.MangaDataProvider;
 import com.mangareader.backend.entity.Manga;
 import com.mangareader.ui.component.extension.VerticalLayoutEx;
 import com.mangareader.ui.view.ChapterView;
@@ -9,7 +8,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
@@ -33,12 +31,10 @@ import java.util.stream.Stream;
 
 import static com.mangareader.backend.data.Constants.*;
 
-@StyleSheet("style.css")
 public class MangaGrid extends AbstractGrid {
 
-  public MangaGrid() {
+  public MangaGrid(List<Manga> mangaList) {
     addIconColumn().setHeader("Icon").setWidth("110px").setFlexGrow(0);
-//    addComponentColumn(this::getIconColumn).setHeader("Icon").setWidth("110px").setFlexGrow(0).setClassNameGenerator(i -> "toomuch");
     Grid.Column<Manga> mangaEntityColumn = addComponentColumn(this::getMainColumn)
         .setHeader("Name").setAutoWidth(true)
         .setComparator(c -> c.getLatestChNum() > c.getCurrentChNum());
@@ -50,7 +46,7 @@ public class MangaGrid extends AbstractGrid {
     getDataCommunicator().enablePushUpdates(Executors.newCachedThreadPool());
     sort(List.of(new GridSortOrder<>(mangaEntityColumn, SortDirection.DESCENDING)));
     setAllRowsVisible(true);  // TODO: change in future
-    setItems(new MangaDataProvider().getMangaEntities());
+    setItems(mangaList);
 
     setClassName("main-grid");
   }

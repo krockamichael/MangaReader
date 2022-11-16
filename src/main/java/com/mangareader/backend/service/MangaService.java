@@ -46,6 +46,7 @@ public class MangaService {
       logger.log(Level.SEVERE, "Manga is null cannot save.");
       return;
     }
-    mangaRepository.save(manga);
+    Manga result = mangaRepository.save(manga);
+    logger.log(Level.INFO, "Manga \"{0}\" saved successfully.", result);
   }
 }
