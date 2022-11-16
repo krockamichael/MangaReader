@@ -1,6 +1,6 @@
 package com.mangareader.ui.view;
 
-import com.mangareader.backend.data.entity.MangaEntity;
+import com.mangareader.backend.entity.MangaEntity;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
 import com.mangareader.ui.component.AddMangaDialog;

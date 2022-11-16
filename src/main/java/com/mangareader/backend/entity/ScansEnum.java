@@ -1,4 +1,4 @@
-package com.mangareader.backend.data.entity;
+package com.mangareader.backend.entity;
 
 import com.vaadin.flow.data.binder.Result;
 import com.vaadin.flow.data.binder.ValueContext;

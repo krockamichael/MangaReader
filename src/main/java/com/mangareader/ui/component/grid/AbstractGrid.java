@@ -1,6 +1,6 @@
 package com.mangareader.ui.component.grid;
 
-import com.mangareader.backend.data.entity.MangaEntity;
+import com.mangareader.backend.entity.MangaEntity;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.component.extension.ImageEx;
 import com.vaadin.flow.component.UI;

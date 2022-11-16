@@ -1,4 +1,4 @@
-package com.mangareader.backend.data.entity;
+package com.mangareader.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;

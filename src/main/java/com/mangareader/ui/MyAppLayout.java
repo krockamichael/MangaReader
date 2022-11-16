@@ -1,6 +1,6 @@
 package com.mangareader.ui;
 
-import com.mangareader.backend.data.entity.MangaEntity;
+import com.mangareader.backend.entity.MangaEntity;
 import com.mangareader.ui.component.extension.ButtonEx;
 import com.mangareader.ui.view.ChapterView;
 import com.mangareader.ui.view.MainView;

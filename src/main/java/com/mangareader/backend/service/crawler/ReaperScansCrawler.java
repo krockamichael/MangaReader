@@ -1,7 +1,7 @@
 package com.mangareader.backend.service.crawler;
 
-import com.mangareader.backend.data.dto.SearchResultDto;
-import com.mangareader.backend.data.entity.MangaEntity;
+import com.mangareader.backend.dto.SearchResultDto;
+import com.mangareader.backend.entity.MangaEntity;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
