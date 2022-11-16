@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.util.CollectionUtils;
@@ -21,20 +21,20 @@ import java.util.List;
 public class MangaDataProvider {
 
   private static final String CSV_FILE_PATH = Paths.get("src/main/resources/static/data.csv").toAbsolutePath().toString();
-  private static final List<MangaEntity> mangaEntities = readMangaEntitiesFromCSV();
+  private static final List<Manga> mangaEntities = readMangaEntitiesFromCSV();
 
-  private static List<MangaEntity> readMangaEntitiesFromCSV() {
+  private static List<Manga> readMangaEntitiesFromCSV() {
     // TODO: use builder and dto?
     File csvFile = new File(CSV_FILE_PATH);
     CsvMapper csvMapper = new CsvMapper();
     CsvSchema csvSchema = csvMapper
-        .typedSchemaFor(MangaEntity.class)
+        .typedSchemaFor(Manga.class)
         .withHeader()
         .withColumnSeparator(',')
         .withComments();
 
-    try (MappingIterator<MangaEntity> mangasIter = csvMapper
-        .readerWithTypedSchemaFor(MangaEntity.class)
+    try (MappingIterator<Manga> mangasIter = csvMapper
+        .readerWithTypedSchemaFor(Manga.class)
         .with(csvSchema)
         .readValues(csvFile)) {
       return mangasIter.readAll();
@@ -57,12 +57,12 @@ public class MangaDataProvider {
     CsvMapper csvMapper = new CsvMapper();
 
     CsvSchema csvSchema = csvMapper
-        .typedSchemaFor(MangaEntity.class)
+        .typedSchemaFor(Manga.class)
         .withHeader()
         .withColumnSeparator(',')
         .withComments();
 
-    ObjectWriter writer = csvMapper.writerFor(MangaEntity.class).with(csvSchema);
+    ObjectWriter writer = csvMapper.writerFor(Manga.class).with(csvSchema);
     try {
       writer.writeValues(csvOutputFile).writeAll(mangaEntities);
     } catch (IOException e) {
@@ -70,7 +70,7 @@ public class MangaDataProvider {
     }
   }
 
-  public List<MangaEntity> getMangaEntities() {
+  public List<Manga> getMangaEntities() {
     return mangaEntities;
   }
 }

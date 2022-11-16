@@ -2,7 +2,7 @@ package com.mangareader.ui.component;
 
 import com.mangareader.backend.data.DtoEntityMapper;
 import com.mangareader.backend.dto.SearchResultDto;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.backend.entity.ScansEnum;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.component.extension.*;
@@ -27,7 +27,7 @@ public class AddMangaDialog extends Dialog {
 
   private final transient MangaGrid grid;
   private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-  private transient MangaEntity entity;
+  private transient Manga entity;
 
   public AddMangaDialog(MangaGrid grid) {
     this.grid = grid;
@@ -62,13 +62,13 @@ public class AddMangaDialog extends Dialog {
         .withItems(ScansEnum.values())
         .withItemLabelGenerator(ScansEnum::getName);
 
-    Binder<MangaEntity> binder = new Binder<>();
+    Binder<Manga> binder = new Binder<>();
     binder.forField(scansCombo)
         .withConverter(new ScansEnum.NameScansEnumConverter())
-        .bind(MangaEntity::getScansName, MangaEntity::setScansName);
+        .bind(Manga::getScansName, Manga::setScansName);
     binder.forField(scansCombo)
         .withConverter(new ScansEnum.UrlScansEnumConverter())
-        .bind(MangaEntity::getScansUrlName, MangaEntity::setScansUrlName);
+        .bind(Manga::getScansUrlName, Manga::setScansUrlName);
     binder.setBean(entity);
 
     return new VerticalLayoutEx(searchCombo, scansCombo)

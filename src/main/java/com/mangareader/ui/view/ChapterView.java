@@ -1,6 +1,6 @@
 package com.mangareader.ui.view;
 
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
 import com.vaadin.flow.component.html.Image;
@@ -15,7 +15,7 @@ import static com.mangareader.backend.data.Constants.MARGIN_TOP;
 @Route(value = "manga/:chapterId", layout = MyAppLayout.class)
 public class ChapterView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
-  private transient MangaEntity mangaEntity;
+  private transient Manga manga;
   private Integer chapterId;
 
   public ChapterView() {
@@ -26,7 +26,7 @@ public class ChapterView extends AbstractVerticalLayout implements BeforeEnterOb
   private void setupImageComponents() {
     removeAll();
     new ReaperScansCrawler()
-        .parseChapter(mangaEntity, chapterId)
+        .parseChapter(manga, chapterId)
         .stream()
         .map(url -> new Image(url, ""))
         .forEach(this::add);
@@ -38,7 +38,7 @@ public class ChapterView extends AbstractVerticalLayout implements BeforeEnterOb
         .getInteger(CHAPTER_ID)
         .ifPresent(value -> chapterId = value);
 
-    mangaEntity = VaadinSession.getCurrent().getAttribute(MangaEntity.class);
+    manga = VaadinSession.getCurrent().getAttribute(Manga.class);
     setupImageComponents();
   }
 }

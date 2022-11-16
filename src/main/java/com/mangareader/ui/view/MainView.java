@@ -1,6 +1,6 @@
 package com.mangareader.ui.view;
 
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
 import com.mangareader.ui.component.AddMangaDialog;
@@ -60,7 +60,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
   }
 
   private TextFieldEx createSearch(MangaGrid grid) {
-    GridListDataView<MangaEntity> dataView = grid.getListDataView();
+    GridListDataView<Manga> dataView = grid.getListDataView();
 
     TextFieldEx searchField = new TextFieldEx()
         .withPlaceholder("Search")
@@ -108,6 +108,6 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
 
   @Override
   public void beforeEnter(BeforeEnterEvent event) {
-    VaadinSession.getCurrent().setAttribute(MangaEntity.class, null);
+    VaadinSession.getCurrent().setAttribute(Manga.class, null);
   }
 }

@@ -1,7 +1,7 @@
 package com.mangareader.ui.component.grid;
 
 import com.mangareader.backend.data.MangaDataProvider;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.ui.component.extension.VerticalLayoutEx;
 import com.mangareader.ui.view.ChapterView;
 import com.vaadin.flow.component.Component;
@@ -39,7 +39,7 @@ public class MangaGrid extends AbstractGrid {
   public MangaGrid() {
     addIconColumn().setHeader("Icon").setWidth("110px").setFlexGrow(0);
 //    addComponentColumn(this::getIconColumn).setHeader("Icon").setWidth("110px").setFlexGrow(0).setClassNameGenerator(i -> "toomuch");
-    Grid.Column<MangaEntity> mangaEntityColumn = addComponentColumn(this::getMainColumn)
+    Grid.Column<Manga> mangaEntityColumn = addComponentColumn(this::getMainColumn)
         .setHeader("Name").setAutoWidth(true)
         .setComparator(c -> c.getLatestChNum() > c.getCurrentChNum());
     addComponentColumn(this::getActionsColumn).setHeader("Actions").setWidth("90px").setFlexGrow(0);
@@ -55,11 +55,11 @@ public class MangaGrid extends AbstractGrid {
     setClassName("main-grid");
   }
 
-  private static ComponentRenderer<MangaDetailsFormLayout, MangaEntity> createMangaDetailsRenderer() {
+  private static ComponentRenderer<MangaDetailsFormLayout, Manga> createMangaDetailsRenderer() {
     return new ComponentRenderer<>(MangaDetailsFormLayout::new, MangaDetailsFormLayout::setManga);
   }
 
-  private Component getMainColumn(MangaEntity entity) {
+  private Component getMainColumn(Manga entity) {
     H3 name = new H3(entity.getName());
     name.getStyle().set(MARGIN_TOP, "5px").set(MARGIN_BOTTOM, ZERO);
 
@@ -69,7 +69,7 @@ public class MangaGrid extends AbstractGrid {
     return new VerticalLayoutEx(name, currentChapterLink, latestChapterLink).withPadding(false);
   }
 
-  private Component getActionsColumn(MangaEntity entity) {
+  private Component getActionsColumn(Manga entity) {
     Icon editIcon = new Icon(VaadinIcon.EDIT);
     editIcon.addClickListener(e -> setDetailsVisible(entity, !isDetailsVisible(entity)));
 
@@ -86,13 +86,13 @@ public class MangaGrid extends AbstractGrid {
     return new VerticalLayoutEx(editIcon, deleteIcon).withSizeFull();
   }
 
-  private Component createChapterLink(MangaEntity entity, Integer chapterNumber, String caption) {
+  private Component createChapterLink(Manga entity, Integer chapterNumber, String caption) {
     H4 chapterCaption = new H4(caption.concat(":"));
     chapterCaption.getStyle().set(MARGIN_TOP, ZERO);
 
     Button chapterLink = new Button(CHAPTER_WITH.formatted(chapterNumber), e -> {
       entity.setCurrentChNum(chapterNumber);
-      VaadinSession.getCurrent().setAttribute(MangaEntity.class, entity);
+      VaadinSession.getCurrent().setAttribute(Manga.class, entity);
       UI.getCurrent().navigate(ChapterView.class,
           new RouteParameters(CHAPTER_ID, chapterNumber.toString()));
     });
@@ -107,8 +107,8 @@ public class MangaGrid extends AbstractGrid {
 
   @Override
   @SuppressWarnings("unchecked")
-  public ListDataProvider<MangaEntity> getDataProvider() {
-    return (ListDataProvider<MangaEntity>) super.getDataProvider();
+  public ListDataProvider<Manga> getDataProvider() {
+    return (ListDataProvider<Manga>) super.getDataProvider();
   }
 
   /**
@@ -116,7 +116,7 @@ public class MangaGrid extends AbstractGrid {
    *
    * @param entity the entity to be added
    */
-  public void addItem(MangaEntity entity) {
+  public void addItem(Manga entity) {
     getDataProvider().getItems().add(entity);
     getDataProvider().refreshAll();
   }
@@ -126,7 +126,7 @@ public class MangaGrid extends AbstractGrid {
    *
    * @param entity the entity to be removed
    */
-  public void removeItem(MangaEntity entity) {
+  public void removeItem(Manga entity) {
     getDataProvider().getItems().remove(entity);
     getDataProvider().refreshAll();
   }
@@ -141,7 +141,7 @@ public class MangaGrid extends AbstractGrid {
   }
 
   private static class MangaDetailsFormLayout extends FormLayout {
-    private final Binder<MangaEntity> binder = new Binder<>();
+    private final Binder<Manga> binder = new Binder<>();
     private final TextField nameField = new TextField("Name");
     private final TextField urlField = new TextField("URL");
     private final TextField scansNameField = new TextField("Scans name");
@@ -152,18 +152,18 @@ public class MangaGrid extends AbstractGrid {
       Stream.of(nameField, urlField, scansNameField, latestChField, currentChField)
           .forEach(this::add);
 
-      binder.bind(nameField, MangaEntity::getName, MangaEntity::setName);
-      binder.bind(urlField, MangaEntity::getUrlName, MangaEntity::setUrlName);
-      binder.bind(scansNameField, MangaEntity::getScansName, MangaEntity::setScansName);
-      binder.bind(latestChField, MangaEntity::getLatestChNum, MangaEntity::setLatestChNum);
-      binder.bind(currentChField, MangaEntity::getCurrentChNum, MangaEntity::setCurrentChNum);
+      binder.bind(nameField, Manga::getName, Manga::setName);
+      binder.bind(urlField, Manga::getUrlName, Manga::setUrlName);
+      binder.bind(scansNameField, Manga::getScansName, Manga::setScansName);
+      binder.bind(latestChField, Manga::getLatestChNum, Manga::setLatestChNum);
+      binder.bind(currentChField, Manga::getCurrentChNum, Manga::setCurrentChNum);
 
       setResponsiveSteps(new ResponsiveStep("0", 3));
       setColspan(nameField, 3);
       setColspan(urlField, 3);
     }
 
-    void setManga(MangaEntity manga) {
+    void setManga(Manga manga) {
       nameField.setValue(manga.getName());
       urlField.setValue(manga.getUrlName());
       scansNameField.setValue(manga.getScansName());

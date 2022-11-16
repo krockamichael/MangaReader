@@ -1,7 +1,7 @@
 package com.mangareader.backend.data;
 
 import com.mangareader.backend.dto.SearchResultDto;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
@@ -10,7 +10,7 @@ public interface DtoEntityMapper {
 
   DtoEntityMapper INSTANCE = Mappers.getMapper(DtoEntityMapper.class);
 
-  SearchResultDto entityToDTO(MangaEntity mangaEntity);
+  SearchResultDto entityToDTO(Manga manga);
 
-  MangaEntity dtoToEntity(SearchResultDto searchResultDto);
+  Manga dtoToEntity(SearchResultDto searchResultDto);
 }

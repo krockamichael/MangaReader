@@ -4,13 +4,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.Entity;
+
 /**
  * Manga Entity containing basic information.
  */
 @Getter
 @Setter
+@Entity
 @JsonPropertyOrder({"name", "urlName", "scansName", "scansUrlName", "latestChNum", "currentChNum", "iconPath"})
-public class MangaEntity {
+public class Manga extends AbstractEntity {
   private String name;
   private String urlName;
   private String scansName;

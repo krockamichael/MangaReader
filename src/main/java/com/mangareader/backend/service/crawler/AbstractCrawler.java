@@ -1,7 +1,7 @@
 package com.mangareader.backend.service.crawler;
 
 import com.mangareader.backend.data.service.Utils;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -74,7 +74,7 @@ public abstract class AbstractCrawler {
    * @param chapterID the chapter number
    * @return list of image sources
    */
-  public abstract List<String> parseChapter(MangaEntity entity, Integer chapterID);
+  public abstract List<String> parseChapter(Manga entity, Integer chapterID);
 
   /**
    * On the manga overview page we parse the latest chapter number and return it.
@@ -110,5 +110,5 @@ public abstract class AbstractCrawler {
    * @return the img element src attribute containing the icon
    */
   @Async
-  public abstract ListenableFuture<String> asyncLoadIcon(MangaEntity entity);
+  public abstract ListenableFuture<String> asyncLoadIcon(Manga entity);
 }

@@ -1,6 +1,6 @@
 package com.mangareader.ui;
 
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.ui.component.extension.ButtonEx;
 import com.mangareader.ui.view.ChapterView;
 import com.mangareader.ui.view.MainView;
@@ -42,11 +42,11 @@ public class MyAppLayout extends AppLayout {
   }
 
   private void setupChapterNavigation() {
-    MangaEntity entity = VaadinSession.getCurrent().getAttribute(MangaEntity.class);
+    Manga entity = VaadinSession.getCurrent().getAttribute(Manga.class);
     createChapterNavigation(entity);
   }
 
-  private void createChapterNavigation(MangaEntity entity) {
+  private void createChapterNavigation(Manga entity) {
     if (entity != null) {
       ComboBox<String> comboBox = createComboBox(entity);
       Button nextChBtn = createNextChButton(entity, comboBox);
@@ -60,7 +60,7 @@ public class MyAppLayout extends AppLayout {
     }
   }
 
-  private Button createNextChButton(MangaEntity entity, ComboBox<String> comboBox) {
+  private Button createNextChButton(Manga entity, ComboBox<String> comboBox) {
     ButtonEx nextChBtn = new ButtonEx("Next")
         .withClickListener(e -> onNextChButtonClick(entity, comboBox))
         .withThemeVariant(ButtonVariant.LUMO_TERTIARY)
@@ -70,7 +70,7 @@ public class MyAppLayout extends AppLayout {
     return nextChBtn;
   }
 
-  private void onNextChButtonClick(MangaEntity entity, ComboBox<String> comboBox) {
+  private void onNextChButtonClick(Manga entity, ComboBox<String> comboBox) {
     entity.setCurrentChNum(
         entity.getCurrentChNum() + 1 > entity.getLatestChNum()
             ? entity.getLatestChNum()
@@ -80,7 +80,7 @@ public class MyAppLayout extends AppLayout {
         new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
   }
 
-  private Button createPrevChButton(MangaEntity entity, ComboBox<String> comboBox, Button nextChButton) {
+  private Button createPrevChButton(Manga entity, ComboBox<String> comboBox, Button nextChButton) {
     ButtonEx prevChBtn = new ButtonEx("Previous")
         .withClickListener(e -> onPrevChButtonClick(entity, comboBox))
         .withThemeVariant(ButtonVariant.LUMO_TERTIARY);
@@ -89,18 +89,18 @@ public class MyAppLayout extends AppLayout {
     return prevChBtn;
   }
 
-  private void onPrevChButtonClick(MangaEntity entity, ComboBox<String> comboBox) {
+  private void onPrevChButtonClick(Manga entity, ComboBox<String> comboBox) {
     entity.setCurrentChNum(entity.getCurrentChNum() - 1);
     comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
     UI.getCurrent().navigate(ChapterView.class,
         new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
   }
 
-  private boolean isNextButtonVisible(MangaEntity entity) {
+  private boolean isNextButtonVisible(Manga entity) {
     return entity.getCurrentChNum() + 1 <= entity.getLatestChNum();
   }
 
-  private ComboBox<String> createComboBox(MangaEntity entity) {
+  private ComboBox<String> createComboBox(Manga entity) {
     ComboBox<String> cb = new ComboBox<>();
     List<String> items = new ArrayList<>();
     for (int i = entity.getLatestChNum(); i >= 0; i--) {

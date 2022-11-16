@@ -1,6 +1,6 @@
 package com.mangareader.ui.component.grid;
 
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.component.extension.ImageEx;
 import com.vaadin.flow.component.UI;
@@ -12,13 +12,13 @@ import static com.mangareader.backend.data.Constants.GRID_IMG_HEIGHT;
 import static com.mangareader.backend.data.Constants.GRID_IMG_WIDTH;
 import static com.mangareader.backend.data.service.Utils.fileExists;
 
-class AbstractGrid extends Grid<MangaEntity> {
+class AbstractGrid extends Grid<Manga> {
 
-  Column<MangaEntity> addIconColumn() {
+  Column<Manga> addIconColumn() {
     return addComponentColumn(this::getIcon).setClassNameGenerator(i -> "icon-img");
   }
 
-  private ImageEx getIcon(MangaEntity entity) {
+  private ImageEx getIcon(Manga entity) {
     ImageEx image = new ImageEx().withHeightAndWidth(GRID_IMG_HEIGHT, GRID_IMG_WIDTH);
 
     // icon is saved locally

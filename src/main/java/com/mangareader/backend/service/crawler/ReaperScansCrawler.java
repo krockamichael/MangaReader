@@ -1,7 +1,7 @@
 package com.mangareader.backend.service.crawler;
 
 import com.mangareader.backend.dto.SearchResultDto;
-import com.mangareader.backend.entity.MangaEntity;
+import com.mangareader.backend.entity.Manga;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.jsoup.Jsoup;
@@ -40,7 +40,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
   private static final Integer CH_PER_PAGE = 32;
 
   @Override
-  public List<String> parseChapter(MangaEntity entity, Integer chapterID) {
+  public List<String> parseChapter(Manga entity, Integer chapterID) {
     double pageNum = ceil(((double) (entity.getLatestChNum() - chapterID - 1) / CH_PER_PAGE));
 
     Document document = pageNum <= 1
@@ -86,7 +86,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   //TODO: can this be implemented in abstract crawler and the asyncLoadIcon be overridden in subclasses?
-  public ListenableFuture<String> asyncLoadIconTimed(MangaEntity entity) {
+  public ListenableFuture<String> asyncLoadIconTimed(Manga entity) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
 
@@ -105,7 +105,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
    */
   @Async
   @Override
-  public ListenableFuture<String> asyncLoadIcon(MangaEntity entity) {
+  public ListenableFuture<String> asyncLoadIcon(Manga entity) {
     Document document = getDocument(toUrl(BASE_URL, entity.getUrlName()));
     entity.setLatestChNum(parseLatestChapterNumber(document));
     String iconUrl = document.select("div > img[src]")
@@ -122,7 +122,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   //TODO: is this not also a super method?
   @Async
-  private void asyncDownloadIcon(MangaEntity entity, String iconUrl) {
+  private void asyncDownloadIcon(Manga entity, String iconUrl) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
     log.info("Started download for %s".formatted(entity.getName()));
@@ -136,7 +136,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   @Async
-  public ListenableFuture<Integer> fetchLatestChapterNumber(MangaEntity entity) {
+  public ListenableFuture<Integer> fetchLatestChapterNumber(Manga entity) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
 
