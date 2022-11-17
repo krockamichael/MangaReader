@@ -1,6 +1,7 @@
 package com.mangareader.ui.component.grid;
 
 import com.mangareader.backend.entity.Manga;
+import com.mangareader.backend.service.MangaService;
 import com.mangareader.ui.component.extension.VerticalLayoutEx;
 import com.mangareader.ui.view.ChapterView;
 import com.vaadin.flow.component.Component;
@@ -33,7 +34,11 @@ import static com.mangareader.backend.data.Constants.*;
 
 public class MangaGrid extends AbstractGrid {
 
-  public MangaGrid(List<Manga> mangaList) {
+  private final MangaService mangaService;
+
+  public MangaGrid(MangaService mangaService) {
+    this.mangaService = mangaService;
+
     addIconColumn().setHeader("Icon").setWidth("110px").setFlexGrow(0);
     Grid.Column<Manga> mangaEntityColumn = addComponentColumn(this::getMainColumn)
         .setHeader("Name").setAutoWidth(true)
@@ -46,7 +51,7 @@ public class MangaGrid extends AbstractGrid {
     getDataCommunicator().enablePushUpdates(Executors.newCachedThreadPool());
     sort(List.of(new GridSortOrder<>(mangaEntityColumn, SortDirection.DESCENDING)));
     setAllRowsVisible(true);  // TODO: change in future
-    setItems(mangaList);
+    setItems(mangaService.findAll());
 
     setClassName("main-grid");
   }
@@ -123,6 +128,7 @@ public class MangaGrid extends AbstractGrid {
    * @param entity the entity to be removed
    */
   public void removeItem(Manga entity) {
+    mangaService.delete(entity);
     getDataProvider().getItems().remove(entity);
     getDataProvider().refreshAll();
   }

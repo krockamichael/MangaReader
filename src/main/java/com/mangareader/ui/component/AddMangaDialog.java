@@ -4,9 +4,9 @@ import com.mangareader.backend.data.DtoEntityMapper;
 import com.mangareader.backend.dto.SearchResultDto;
 import com.mangareader.backend.entity.Manga;
 import com.mangareader.backend.entity.ScansEnum;
+import com.mangareader.backend.service.MangaService;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.component.extension.*;
-import com.mangareader.ui.component.grid.MangaGrid;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -19,18 +19,21 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import org.springframework.data.domain.PageRequest;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.mangareader.backend.data.Constants.*;
 
 public class AddMangaDialog extends Dialog {
 
-  private final transient MangaGrid grid;
   private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
+  private final transient MangaService mangaService;
+  private final List<Binder<Manga>> binders = new ArrayList<>();
   private transient Manga entity;
 
-  public AddMangaDialog(MangaGrid grid) {
-    this.grid = grid;
+  public AddMangaDialog(MangaService mangaService) {
+    this.mangaService = mangaService;
     setDraggable(true);
     setPosition();
     setupContent();
@@ -62,14 +65,15 @@ public class AddMangaDialog extends Dialog {
         .withItems(ScansEnum.values())
         .withItemLabelGenerator(ScansEnum::getName);
 
-    Binder<Manga> binder = new Binder<>();
-    binder.forField(scansCombo)
-        .withConverter(new ScansEnum.NameScansEnumConverter())
-        .bind(Manga::getScansName, Manga::setScansName);
-    binder.forField(scansCombo)
+    Binder<Manga> nameBinder = new Binder<>();
+    nameBinder.forField(scansCombo)
         .withConverter(new ScansEnum.UrlScansEnumConverter())
         .bind(Manga::getScansUrlName, Manga::setScansUrlName);
-    binder.setBean(entity);
+    Binder<Manga> urlNameBinder = new Binder<>();
+    urlNameBinder.forField(scansCombo)
+        .withConverter(new ScansEnum.NameScansEnumConverter())
+        .bind(Manga::getScansName, Manga::setScansName);
+    binders.addAll(List.of(nameBinder, urlNameBinder));
 
     return new VerticalLayoutEx(searchCombo, scansCombo)
         .withPadding(false)
@@ -128,8 +132,8 @@ public class AddMangaDialog extends Dialog {
   }
 
   private void closeDialog(ClickEvent<Button> event) {
-    grid.addItem(entity);
-    grid.sort(grid.getSortOrder());
+    binders.forEach(b -> b.setBean(entity));
+    mangaService.save(entity);
     close();
   }
 }

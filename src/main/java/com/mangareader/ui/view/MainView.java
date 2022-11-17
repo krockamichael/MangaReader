@@ -36,7 +36,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
   public MainView(MangaService mangaService) {
     super();
     this.mangaService = mangaService;
-    grid = new MangaGrid(mangaService.findAll());
+    grid = new MangaGrid(mangaService);
     setupContent();
   }
 
@@ -67,6 +67,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
     grid.setItems(mangaService.findAll(searchTerm));
   }
 
+  // TODO: fix
   private TextFieldEx createSearch() {
     GridListDataView<Manga> dataView = grid.getListDataView();
 
@@ -80,8 +81,9 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
 
     dataView.addFilter(mangaEntity -> {
       String searchTerm = searchField.getValue().trim();
-      if (searchTerm.isEmpty())
+      if (searchTerm.isEmpty()) {
         return true;
+      }
 
       return matchesTerm(mangaEntity.getName(), searchTerm);
     });
@@ -111,7 +113,15 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
 
   private ButtonEx createAddButton() {
     return new ButtonEx("Add")
-        .withClickListener(e -> new AddMangaDialog(grid).open());
+        .withClickListener(e -> {
+          AddMangaDialog dialog = new AddMangaDialog(mangaService);
+          dialog.addOpenedChangeListener(e2 -> {
+            if (!e2.isOpened()) {
+              grid.getDataProvider().refreshAll();
+            }
+          });
+          dialog.open();
+        });
   }
 
   @Override
