@@ -1,4 +1,4 @@
-package com.mangareader.ui.component;
+package com.mangareader.ui.component.custom;
 
 import com.mangareader.backend.data.DtoEntityMapper;
 import com.mangareader.backend.dto.SearchResultDto;
@@ -40,10 +40,9 @@ public class AddMangaDialog extends Dialog {
   }
 
   public void setPosition() {
-    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, "position", "fixed");
-    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, "left", "92%");
-    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, "top", "9%");
-    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, "transform", "translate(-90%, -9%)");
+    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, POSITION, "fixed");
+    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, LEFT, "75%");
+    getElement().executeJs(SET_PROPERTY_IN_OVERLAY_JS, TOP, "6.5%");
   }
 
   private void setupContent() {
@@ -79,7 +78,7 @@ public class AddMangaDialog extends Dialog {
         .withPadding(false)
         .withSpacing(false)
         .withAlignItems(FlexComponent.Alignment.STRETCH)
-        .withStyle("width", "22rem")
+        .withStyle(WIDTH, "22rem")
         .withStyle("max-width", "100%");
   }
 

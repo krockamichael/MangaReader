@@ -26,4 +26,8 @@ public class ButtonEx extends Button {
     return this;
   }
 
+  public ButtonEx withStyle(String styleName, String styleValue) {
+    getStyle().set(styleName, styleValue);
+    return this;
+  }
 }

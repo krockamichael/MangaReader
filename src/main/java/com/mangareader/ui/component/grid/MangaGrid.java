@@ -34,12 +34,12 @@ import static com.mangareader.backend.data.Constants.*;
 
 public class MangaGrid extends AbstractGrid {
 
-  private final MangaService mangaService;
+  private final transient MangaService mangaService;
 
   public MangaGrid(MangaService mangaService) {
     this.mangaService = mangaService;
 
-    addIconColumn().setHeader("Icon").setWidth("110px").setFlexGrow(0);
+    addIconColumn().setHeader("Icon").setWidth("100px").setFlexGrow(0);
     Grid.Column<Manga> mangaEntityColumn = addComponentColumn(this::getMainColumn)
         .setHeader("Name").setAutoWidth(true)
         .setComparator(c -> c.getLatestChNum() > c.getCurrentChNum());

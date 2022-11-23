@@ -1,127 +1,45 @@
 package com.mangareader.ui.view;
 
 import com.mangareader.backend.entity.Manga;
+import com.mangareader.backend.event.ComponentCloseEvent;
 import com.mangareader.backend.service.MangaService;
-import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
-import com.mangareader.ui.component.AddMangaDialog;
-import com.mangareader.ui.component.extension.ButtonEx;
-import com.mangareader.ui.component.extension.HorizontalLayoutEx;
-import com.mangareader.ui.component.extension.TextFieldEx;
-import com.mangareader.ui.component.extension.VerticalLayoutEx;
-import com.mangareader.ui.component.grid.MangaGrid;
-import com.mangareader.ui.component.grid.NewMangaSidebar;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.Unit;
-import com.vaadin.flow.component.grid.dataview.GridListDataView;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.data.value.ValueChangeMode;
+import com.mangareader.ui.component.custom.MainGridComponent;
+import com.mangareader.ui.component.custom.NewMangaSidebarComponent;
+import com.vaadin.flow.component.AttachEvent;
+import com.vaadin.flow.component.ComponentUtil;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
-
-import static com.mangareader.backend.data.Constants.AUTO;
-import static com.mangareader.backend.data.Constants.MARGIN;
+import com.vaadin.flow.shared.Registration;
 
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
-  private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
-  private final transient MangaService mangaService;
-  private final MangaGrid grid;
+  private Registration registration;
 
   public MainView(MangaService mangaService) {
     super();
-    this.mangaService = mangaService;
-    grid = new MangaGrid(mangaService);
-    setupContent();
+    add(new NewMangaSidebarComponent(mangaService), new MainGridComponent(mangaService));
   }
 
-  private void setupContent() {
-    TextFieldEx search = createSearch();
-    ButtonEx updateBtn = createUpdateButton();
-    ButtonEx addBtn = createAddButton();
-    NewMangaSidebar sidebar = new NewMangaSidebar(mangaService.findAll());
-
-    HorizontalLayoutEx hl = new HorizontalLayoutEx(updateBtn, addBtn, search)
-        .withFlexGrow(1d, search)
-        .withWidthFull();
-
-    VerticalLayoutEx vl = new VerticalLayoutEx(hl, grid)
-        .withHeightFull()
-        .withWidth(740, Unit.PIXELS)
-        .withSelfFlexGrow(.9d);
-
-    HorizontalLayoutEx hl2 = new HorizontalLayoutEx(sidebar, vl)
-        .withSizeUndefined()
-        .withFlexGrow(0, sidebar, vl)
-        .withSelfFlexGrow(0);
-
-    add(hl2);
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    registration = ComponentUtil.addListener(
+        attachEvent.getUI(),
+        ComponentCloseEvent.class,
+        e -> add(e.getSource().onCloseCreatePlusButton()
+            .withClickListener(click -> remove(click.getSource())))
+    );
   }
 
-  public void updateGrid(String searchTerm) {
-    grid.setItems(mangaService.findAll(searchTerm));
-  }
-
-  // TODO: fix
-  private TextFieldEx createSearch() {
-    GridListDataView<Manga> dataView = grid.getListDataView();
-
-    TextFieldEx searchField = new TextFieldEx()
-        .withPlaceholder("Search")
-        .withWidth("50%")
-        .withStyle(MARGIN, AUTO)
-        .withPrefixComponent(new Icon(VaadinIcon.SEARCH))
-        .withValueChangeMode(ValueChangeMode.LAZY)
-        .withValueChangeListener(e -> dataView.refreshAll());
-
-    dataView.addFilter(mangaEntity -> {
-      String searchTerm = searchField.getValue().trim();
-      if (searchTerm.isEmpty()) {
-        return true;
-      }
-
-      return matchesTerm(mangaEntity.getName(), searchTerm);
-    });
-
-    return searchField;
-  }
-
-  private boolean matchesTerm(String value, String searchTerm) {
-    return value.toLowerCase().contains(searchTerm.toLowerCase());
-  }
-
-  private ButtonEx createUpdateButton() {
-    UI ui = UI.getCurrent();
-    return new ButtonEx("Update")
-        .withClickListener(e -> grid.getDataProvider()
-            .getItems()
-            .forEach(entity -> new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
-                .addCallback(
-                    result -> {
-                      entity.setLatestChNum(result);
-                      ui.access(() -> grid.getDataProvider().refreshItem(entity));
-                    },
-                    err -> ui.access(() -> Notification.show("Failed to parse latest chapter for " + entity.getName()))
-                )
-            ).start()));
-  }
-
-  private ButtonEx createAddButton() {
-    return new ButtonEx("Add")
-        .withClickListener(e -> {
-          AddMangaDialog dialog = new AddMangaDialog(mangaService);
-          dialog.addOpenedChangeListener(e2 -> {
-            if (!e2.isOpened()) {
-              grid.getDataProvider().refreshAll();
-            }
-          });
-          dialog.open();
-        });
+  @Override
+  protected void onDetach(DetachEvent detachEvent) {
+    super.onDetach(detachEvent);
+    registration.remove();
   }
 
   @Override

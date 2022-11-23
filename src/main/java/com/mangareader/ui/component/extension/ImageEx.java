@@ -8,6 +8,10 @@ public class ImageEx extends Image {
   public ImageEx() {
   }
 
+  public ImageEx(String src) {
+    this(src, "");
+  }
+
   public ImageEx(String src, String alt) {
     super(src, alt);
   }

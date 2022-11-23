@@ -1,11 +1,13 @@
 package com.mangareader.ui.view;
 
+import com.mangareader.backend.event.ComponentCloseEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 /**
  * Abstract Vertical Layout component that defines the basic behaviour for view pages.
  */
-abstract class AbstractVerticalLayout extends VerticalLayout {
+public abstract class AbstractVerticalLayout extends VerticalLayout {
 
   AbstractVerticalLayout() {
     setHeightFull();
@@ -13,5 +15,9 @@ abstract class AbstractVerticalLayout extends VerticalLayout {
     setMargin(false);
     setPadding(false);
     setSpacing(false);
+  }
+
+  void addComponentCloseListener(ComponentEventListener<ComponentCloseEvent> listener) {
+    addListener(ComponentCloseEvent.class, listener);
   }
 }

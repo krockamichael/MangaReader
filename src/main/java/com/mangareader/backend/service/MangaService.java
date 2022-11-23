@@ -5,10 +5,10 @@ import com.mangareader.backend.repository.MangaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 public class MangaService {
@@ -29,7 +29,7 @@ public class MangaService {
     if (filter == null || filter.isEmpty()) {
       return mangaRepository.findAll();
     } else {
-      return Collections.emptyList();// mangaRepository.search(filter);
+      return mangaRepository.search(filter);
     }
   }
 
@@ -48,5 +48,10 @@ public class MangaService {
     }
     Manga result = mangaRepository.save(manga);
     logger.log(Level.INFO, "Manga \"{0}\" saved successfully.", result);
+  }
+
+  public void saveAll(List<Manga> entities) {
+    mangaRepository.saveAll(entities);
+    logger.log(Level.INFO, "Saved mangas: \n{0}", entities.stream().map(Manga::getName).collect(Collectors.joining("\n")));
   }
 }

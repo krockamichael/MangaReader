@@ -3,10 +3,11 @@ package com.mangareader.ui.component.extension;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.Unit;
+import com.vaadin.flow.component.dnd.DragSource;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
-public class HorizontalLayoutEx extends HorizontalLayout {
+public class HorizontalLayoutEx extends HorizontalLayout implements DragSource<HorizontalLayoutEx> {
 
   public HorizontalLayoutEx(Component... components) {
     super(components);
@@ -59,6 +60,16 @@ public class HorizontalLayoutEx extends HorizontalLayout {
 
   public HorizontalLayoutEx withSelfFlexGrow(double flexGrow) {
     setFlexGrow(flexGrow, this);
+    return this;
+  }
+
+  public HorizontalLayoutEx withDraggable(boolean draggable) {
+    setDraggable(draggable);
+    return this;
+  }
+
+  public HorizontalLayoutEx withStyle(String styleName, String styleValue) {
+    getStyle().set(styleName, styleValue);
     return this;
   }
 }

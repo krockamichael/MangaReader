@@ -53,7 +53,7 @@ public class MyAppLayout extends AppLayout {
       Button prevChBtn = createPrevChButton(entity, comboBox, nextChBtn);
 
       buttonWrapper = new HorizontalLayout(prevChBtn, comboBox, nextChBtn);
-      buttonWrapper.getStyle().set("left", "40%").set("position", "absolute");
+      buttonWrapper.getStyle().set(LEFT, "40%").set(POSITION, "absolute");
       addToNavbar(buttonWrapper);
     } else {
       remove(buttonWrapper);

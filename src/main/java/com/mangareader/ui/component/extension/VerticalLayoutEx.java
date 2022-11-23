@@ -22,8 +22,18 @@ public class VerticalLayoutEx extends VerticalLayout {
     return this;
   }
 
+  public VerticalLayoutEx withAlignSelf(FlexComponent.Alignment alignment, HasElement... elementContainers) {
+    setAlignSelf(alignment, elementContainers);
+    return this;
+  }
+
   public VerticalLayoutEx withAlignItems(FlexComponent.Alignment alignment) {
     setAlignItems(alignment);
+    return this;
+  }
+
+  public VerticalLayoutEx withJustifyContentMode(FlexComponent.JustifyContentMode justifyContentMode) {
+    setJustifyContentMode(justifyContentMode);
     return this;
   }
 

@@ -1,0 +1,9 @@
+[part='header'] {
+    padding: 0;
+}
+
+[part='title'] {
+    font-size: var(--lumo-font-size-m);
+    margin-top: 10px;
+}
+

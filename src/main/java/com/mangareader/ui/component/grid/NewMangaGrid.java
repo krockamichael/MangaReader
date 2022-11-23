@@ -4,9 +4,9 @@ import com.mangareader.backend.entity.Manga;
 
 import java.util.List;
 
-public class NewMangaSidebar extends AbstractGrid {
+public class NewMangaGrid extends AbstractGrid {
 
-  public NewMangaSidebar(List<Manga> mangaList) {
+  public NewMangaGrid(List<Manga> mangaList) {
     addIconColumn();
     setItems(mangaList);
     setAllRowsVisible(true);

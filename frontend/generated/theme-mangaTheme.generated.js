@@ -56,6 +56,7 @@ export const injectGlobalCss = (css, target, first) => {
 import stylesCss from 'themes/mangaTheme/styles.css?inline';
 import { color } from '@vaadin/vaadin-lumo-styles/color.js';
 import { typography } from '@vaadin/vaadin-lumo-styles/typography.js';
+import vaadinDialogOverlayCss from 'themes/mangaTheme/components/vaadin-dialog-overlay.css?inline';
 import vaadinGridCss from 'themes/mangaTheme/components/vaadin-grid.css?inline';
 
 window.Vaadin = window.Vaadin || {};
@@ -100,6 +101,10 @@ export const applyTheme = (target) => {
     
   
   if (!document['_vaadintheme_mangaTheme_componentCss']) {
+    registerStyles(
+      'vaadin-dialog-overlay',
+      unsafeCSS(vaadinDialogOverlayCss.toString())
+    );
     registerStyles(
       'vaadin-grid',
       unsafeCSS(vaadinGridCss.toString())
