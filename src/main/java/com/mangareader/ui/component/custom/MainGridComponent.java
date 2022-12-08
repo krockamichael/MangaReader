@@ -8,7 +8,6 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.data.value.ValueChangeMode;
 
 import java.util.ArrayList;
@@ -49,19 +48,25 @@ public class MainGridComponent extends DialogEx {
   }
 
   private ButtonEx createUpdateButton() {
-    UI ui = UI.getCurrent();
     return new ButtonEx("Update")
-        .withClickListener(e -> grid.getDataProvider()
-            .getItems()
-            .forEach(entity -> new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
-                .addCallback(
-                    result -> {
-                      entity.setLatestChNum(result);
-                      ui.access(() -> grid.getDataProvider().refreshItem(entity));
-                    },
-                    err -> ui.access(() -> Notification.show("Failed to parse latest chapter for " + entity.getName()))
-                )
-            ).start()));
+        .withClickListener(e -> update());
+  }
+
+  public void update() {
+    grid.getDataProvider()
+        .getItems()
+        .forEach(entity -> new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
+            .addCallback(
+                result -> {
+                  entity.setLatestChNum(result);
+                  UI.getCurrent().access(() -> {
+                    grid.getDataProvider().refreshItem(entity);
+                    NotificationEx.success(entity.getName() + " updated to " + result);
+                  });
+                },
+                err -> UI.getCurrent().access(() -> NotificationEx.error("Failed to parse latest chapter for " + entity.getName()))
+            )
+        ).start());
   }
 
   private ButtonEx createAddButton() {
@@ -93,6 +98,7 @@ public class MainGridComponent extends DialogEx {
 
   private void saveItems() {
     mangaService.saveAll(new ArrayList<>(grid.getDataProvider().getItems()));
+    NotificationEx.success("Saved!");
   }
 
   private void updateGrid(String searchTerm) {

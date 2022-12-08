@@ -18,11 +18,13 @@ import com.vaadin.flow.shared.Registration;
 @Route(value = "", layout = MyAppLayout.class)
 public class MainView extends AbstractVerticalLayout implements BeforeEnterObserver {
 
+  private final MainGridComponent mainGrid;
   private Registration registration;
 
   public MainView(MangaService mangaService) {
     super();
-    add(new NewMangaSidebarComponent(mangaService), new MainGridComponent(mangaService));
+    mainGrid = new MainGridComponent(mangaService);
+    add(new NewMangaSidebarComponent(mangaService), mainGrid);
   }
 
   @Override
@@ -34,6 +36,7 @@ public class MainView extends AbstractVerticalLayout implements BeforeEnterObser
         e -> add(e.getSource().onCloseCreatePlusButton()
             .withClickListener(click -> remove(click.getSource())))
     );
+    mainGrid.update();
   }
 
   @Override
