@@ -2,6 +2,7 @@ package com.mangareader.ui;
 
 import com.mangareader.backend.entity.Manga;
 import com.mangareader.ui.component.extension.ButtonEx;
+import com.mangareader.ui.component.extension.HorizontalLayoutEx;
 import com.mangareader.ui.view.ChapterView;
 import com.mangareader.ui.view.MainView;
 import com.vaadin.flow.component.UI;
@@ -21,18 +22,18 @@ import static com.mangareader.backend.data.Constants.*;
 public class MyAppLayout extends AppLayout {
 
   private HorizontalLayout buttonWrapper = new HorizontalLayout();
+  private Button nextChBtn;
+  private Button prevChBtn;
 
   public MyAppLayout() {
     addToNavbar(getTitle());
   }
 
   private Button getTitle() {
-    Button title = new Button(MANGA_READER);
-    title.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-    title.getStyle().set(MARGIN_LEFT, "10px");
-    title.addClickListener(e -> UI.getCurrent().navigate(MainView.class));
-
-    return title;
+    return new ButtonEx(MANGA_READER)
+        .withStyle(MARGIN_LEFT, "10px")
+        .withThemeVariant(ButtonVariant.LUMO_TERTIARY)
+        .withClickListener(e -> UI.getCurrent().navigate(MainView.class));
   }
 
   @Override
@@ -49,25 +50,29 @@ public class MyAppLayout extends AppLayout {
   private void createChapterNavigation(Manga entity) {
     if (entity != null) {
       ComboBox<String> comboBox = createComboBox(entity);
-      Button nextChBtn = createNextChButton(entity, comboBox);
-      Button prevChBtn = createPrevChButton(entity, comboBox, nextChBtn);
+      createNextChButton(entity, comboBox);
+      createPrevChButton(entity, comboBox);
+      setupButtonVisibility(entity);
 
-      buttonWrapper = new HorizontalLayout(prevChBtn, comboBox, nextChBtn);
-      buttonWrapper.getStyle().set(LEFT, "40%").set(POSITION, "absolute");
+      buttonWrapper = new HorizontalLayoutEx(prevChBtn, comboBox, nextChBtn)
+          .withStyle(LEFT, "40%")
+          .withStyle(POSITION, "absolute");
       addToNavbar(buttonWrapper);
     } else {
       remove(buttonWrapper);
     }
   }
 
-  private Button createNextChButton(Manga entity, ComboBox<String> comboBox) {
-    ButtonEx nextChBtn = new ButtonEx("Next")
-        .withClickListener(e -> onNextChButtonClick(entity, comboBox))
-        .withThemeVariant(ButtonVariant.LUMO_TERTIARY)
-        .withVisibility(isNextButtonVisible(entity));
-
-    nextChBtn.addClickListener(e -> nextChBtn.setVisible(isNextButtonVisible(entity)));
-    return nextChBtn;
+  private void createNextChButton(Manga entity, ComboBox<String> comboBox) {
+    if (nextChBtn == null) {
+      nextChBtn = new ButtonEx("Next")
+          .withVisibility(isNextButtonVisible(entity))
+          .withThemeVariant(ButtonVariant.LUMO_TERTIARY)
+          .withClickListener(e -> {
+            onNextChButtonClick(entity, comboBox);
+            setupButtonVisibility(entity);
+          });
+    }
   }
 
   private void onNextChButtonClick(Manga entity, ComboBox<String> comboBox) {
@@ -75,43 +80,52 @@ public class MyAppLayout extends AppLayout {
         entity.getCurrentChNum() + 1 > entity.getLatestChNum()
             ? entity.getLatestChNum()
             : entity.getCurrentChNum() + 1);
-    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
-    UI.getCurrent().navigate(ChapterView.class,
-        new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
+    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));  // also navigates
   }
 
-  private Button createPrevChButton(Manga entity, ComboBox<String> comboBox, Button nextChButton) {
-    ButtonEx prevChBtn = new ButtonEx("Previous")
-        .withClickListener(e -> onPrevChButtonClick(entity, comboBox))
-        .withThemeVariant(ButtonVariant.LUMO_TERTIARY);
-
-    prevChBtn.addClickListener(e -> nextChButton.setVisible(isNextButtonVisible(entity)));
-    return prevChBtn;
+  private void createPrevChButton(Manga entity, ComboBox<String> comboBox) {
+    if (prevChBtn == null) {
+      prevChBtn = new ButtonEx("Previous")
+          .withThemeVariant(ButtonVariant.LUMO_TERTIARY)
+          .withVisibility(isPreviousButtonVisible(entity))
+          .withClickListener(e -> {
+            onPrevChButtonClick(entity, comboBox);
+            setupButtonVisibility(entity);
+          });
+    }
   }
 
   private void onPrevChButtonClick(Manga entity, ComboBox<String> comboBox) {
     entity.setCurrentChNum(entity.getCurrentChNum() - 1);
-    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
-    UI.getCurrent().navigate(ChapterView.class,
-        new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
+    comboBox.setValue(CHAPTER_WITH.formatted(entity.getCurrentChNum()));  // also navigates
+  }
+
+  private boolean isPreviousButtonVisible(Manga entity) {
+    return entity.getCurrentChNum() > 1;
   }
 
   private boolean isNextButtonVisible(Manga entity) {
     return entity.getCurrentChNum() + 1 <= entity.getLatestChNum();
   }
 
+  private void setupButtonVisibility(Manga entity) {
+    nextChBtn.setVisible(isNextButtonVisible(entity));
+    prevChBtn.setVisible(isPreviousButtonVisible(entity));
+  }
+
   private ComboBox<String> createComboBox(Manga entity) {
     ComboBox<String> cb = new ComboBox<>();
     List<String> items = new ArrayList<>();
-    for (int i = entity.getLatestChNum(); i >= 0; i--) {
+
+    for (int i = entity.getLatestChNum(); i > 0; i--) {
       items.add(CHAPTER_WITH.formatted(i));
     }
     cb.setItems(items);
     cb.setPlaceholder(CHAPTER_WITH.formatted(entity.getCurrentChNum()));
     cb.addValueChangeListener(e -> {
-      entity.setCurrentChNum(items.size() - items.indexOf(e.getValue()) - 1);
-      UI.getCurrent().navigate(ChapterView.class,
-          new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
+      entity.setCurrentChNum(items.size() - items.indexOf(e.getValue()));
+      setupButtonVisibility(entity);
+      UI.getCurrent().navigate(ChapterView.class, new RouteParameters(CHAPTER_ID, entity.getCurrentChNum().toString()));
     });
     return cb;
   }

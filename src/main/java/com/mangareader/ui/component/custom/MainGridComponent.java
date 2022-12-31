@@ -51,18 +51,19 @@ public class MainGridComponent extends DialogEx {
 
   /** Updates the latest chapter number for each manga in MainGridComponent. */
   public void updateLatestChapters() {
+    UI ui = UI.getCurrent();
     grid.getDataProvider()
         .getItems()
         .forEach(entity -> new Thread(() -> rsCrawler.fetchLatestChapterNumber(entity)
             .addCallback(
                 result -> {
                   entity.setLatestChNum(result);
-                  UI.getCurrent().access(() -> {
+                  ui.access(() -> {
                     grid.getDataProvider().refreshItem(entity);
                     NotificationEx.success(entity.getName() + " updated to " + result);
                   });
                 },
-                err -> UI.getCurrent().access(() -> NotificationEx.error("Failed to parse latest chapter for " + entity.getName()))
+                err -> ui.access(() -> NotificationEx.error("Failed to parse latest chapter for " + entity.getName()))
             )
         ).start());
   }

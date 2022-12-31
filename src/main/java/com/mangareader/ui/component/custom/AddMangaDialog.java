@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import static com.mangareader.backend.data.Constants.*;
 
+//TODO: should extends DialogEx, no?
 public class AddMangaDialog extends Dialog {
 
   private final transient ReaperScansCrawler rsCrawler = new ReaperScansCrawler();
@@ -90,10 +91,8 @@ public class AddMangaDialog extends Dialog {
       return Stream.empty();
     }
 
-    return rsCrawler.getMangaUrl(
-            value,
-            PageRequest.of(query.getPage(), query.getPageSize()))
-        .stream();
+    PageRequest pageRequest = PageRequest.of(query.getPage(), query.getPageSize());
+    return rsCrawler.getMangaUrl(value, pageRequest).stream();
   }
 
   private Renderer<SearchResultDto> createRenderer() {
@@ -133,6 +132,7 @@ public class AddMangaDialog extends Dialog {
   private void closeDialog(ClickEvent<Button> event) {
     binders.forEach(b -> b.setBean(entity));
     mangaService.save(entity);
+    NotificationEx.success(entity.getName() + " saved.");
     close();
   }
 }

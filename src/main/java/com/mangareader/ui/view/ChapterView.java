@@ -5,6 +5,7 @@ import com.mangareader.backend.service.MangaService;
 import com.mangareader.backend.service.crawler.ReaperScansCrawler;
 import com.mangareader.ui.MyAppLayout;
 import com.mangareader.ui.component.extension.ImageEx;
+import com.mangareader.ui.component.extension.NotificationEx;
 import com.vaadin.flow.router.*;
 import com.vaadin.flow.server.VaadinSession;
 
@@ -45,6 +46,7 @@ public class ChapterView extends AbstractVerticalLayout implements BeforeEnterOb
 
   @Override
   public void beforeLeave(BeforeLeaveEvent event) {
+    NotificationEx.success(manga.getName() + " saved.");
     mangaService.save(manga);
   }
 }

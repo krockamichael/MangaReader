@@ -4,6 +4,7 @@ import com.mangareader.backend.dto.SearchResultDto;
 import com.mangareader.backend.entity.Manga;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -19,6 +20,8 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,28 +37,91 @@ import static java.lang.Math.ceil;
 @Log4j2
 @Service
 @NoArgsConstructor
-public class ReaperScansCrawler extends AbstractCrawler {
+public class ReaperScansCrawler extends Crawler {
 
-  private static final String BASE_URL = "https://reaperscans.com/comics/";
-  private static final Integer CH_PER_PAGE = 32;
+  private static final String CHAPTER = "chapter-";
 
   @Override
-  public List<String> parseChapter(Manga entity, Integer chapterID) {
-    double pageNum = ceil(((double) (entity.getLatestChNum() - chapterID - 1) / CH_PER_PAGE));
-
-    Document document = pageNum <= 1
-        ? getDocument(toUrl(BASE_URL, entity.getUrlName()))
-        : getDocument(toUrl(BASE_URL, entity.getUrlName(), "?page=", Double.toString(pageNum)));
-
-    entity.setLatestChNum(parseLatestChapterNumber(document));
-    String chapterLink = parseLinkText(document, chapterID.toString());
-    Document latestChapter = getDocument(chapterLink);
-
-    return parseImages(latestChapter);
+  protected String getBaseUrl() {
+    return "https://reaperscans.com/comics/";
   }
 
   @Override
-  protected Integer parseLatestChapterNumber(Document document) {
+  public List<String> parseChapter(@NotNull Manga entity, @NotNull Integer chapterID) {
+    double pageNum = ceil(((double) (entity.getLatestChNum() - chapterID - 1) / 32));
+    Document document = pageNum <= 1
+        ? getDocument(toUrl(getBaseUrl(), entity.getUrlName()))
+        : getDocument(toUrl(getBaseUrl(), entity.getUrlName(), "?page=", Double.toString(pageNum)));
+
+    if (document != null) {
+      String chapterUrl = parseChapterURL(document, chapterID.toString());
+      if (chapterUrl != null) {
+        Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+        if (chapterDocument != null) {
+          log.info("Parsing images from ReaperScans.");
+          return parseImages(chapterDocument);
+        }
+      }
+    }
+
+    return attemptGoogleSearch(entity, chapterID);
+  }
+
+  private List<String> attemptGoogleSearch(Manga entity, Integer targetChapterID) {
+    String chapterUrl = getChapterUrlGoogle(entity, targetChapterID);
+
+    if (chapterUrl != null && chapterUrl.endsWith(CHAPTER + targetChapterID)) {
+      Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+      if (chapterDocument != null) {
+        log.info("Parsing images from Google Search.");
+        return parseImages(chapterDocument);
+      }
+    }
+
+    return attemptAdjacentChaptersGoogleSearch(entity, targetChapterID);
+  }
+
+  private List<String> attemptAdjacentChaptersGoogleSearch(Manga entity, Integer targetChapterID) {
+    List<Integer> chapterIdsToCheck = List.of(targetChapterID + 1, targetChapterID - 1);
+
+    for (Integer adjacentChapterId : chapterIdsToCheck) {
+      String chapterUrl = getChapterUrlGoogle(entity, adjacentChapterId);
+
+      if (chapterUrl == null || !chapterUrl.endsWith(CHAPTER + (adjacentChapterId))) {
+        continue;
+      }
+
+      chapterUrl = getLinkFromAdjacentChapter(chapterUrl, targetChapterID);
+      if (chapterUrl != null) {
+        Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+        if (chapterDocument != null) {
+          log.info("Parsing images from ADJACENT chapter {} Google Search.", adjacentChapterId);
+          return parseImages(chapterDocument);
+        }
+      }
+    }
+
+    return Collections.emptyList();
+  }
+
+  private String getLinkFromAdjacentChapter(String chapterUrl, Integer chapterID) {
+    Document chapterDocument = getDocument(chapterUrl);
+    return chapterDocument.select("nav > div > a")
+        .stream()
+        .map(anchorTag -> anchorTag.attr("href"))
+        .filter(url -> url.endsWith(CHAPTER + chapterID))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private String getChapterUrlGoogle(@NotNull Manga entity, Integer chapterID) {
+    String googleSearchUrl = getGoogleSearchUrlForChapter(getBaseUrl(), entity.getName(), chapterID);
+    Document document = getDocument(googleSearchUrl);
+    return parseChapterURL(document);
+  }
+
+  @Override
+  protected Integer parseLatestChapterNumber(@NotNull Document document) {
     return document.select("div > div > h1")
         .stream()
         .skip(1)
@@ -67,18 +133,30 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .orElse(null);
   }
 
-  @Override
-  protected String parseLinkText(Document document, String chapterNumber) {
+  private String parseChapterURL(@NotNull Document document, String chapterNumber) {
     return document.select("li > a[href]")
         .stream()
         .map(e -> e.attr("href"))
-        .filter(e -> e.contains("chapter-" + chapterNumber))
+        .filter(e -> e.endsWith(CHAPTER + chapterNumber))
         .findFirst()
         .orElse(null);
   }
 
   @Override
-  protected List<String> parseImages(Document document) {
+  protected String parseChapterURL(@NotNull Document document) {
+    return document.select("a[href] > div > div > h3")
+        .parents()
+        .stream()
+        .filter(item -> item.tagName().equals("a"))
+        .map(item -> item.absUrl("href"))
+        // Google returns URLs in format "http://www.google.com/url?q=<url>&sa=U&ei=<someKey>"
+        .map(item -> URLDecoder.decode(item.substring(item.indexOf('=') + 1, item.indexOf('&')), StandardCharsets.UTF_8))
+        .findAny()
+        .orElse(null);
+  }
+
+  @Override
+  protected List<String> parseImages(@NotNull Document document) {
     return document.select("main > div > p > img[src]")
         .stream()
         .map(e -> e.attr("src"))
@@ -99,14 +177,13 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   /**
    * Icon is not downloaded, download it in background, show icon from website
-   *
    * @param entity the manga entity
    * @return the icon url
    */
   @Async
   @Override
-  public ListenableFuture<String> asyncLoadIcon(Manga entity) {
-    Document document = getDocument(toUrl(BASE_URL, entity.getUrlName()));
+  public ListenableFuture<String> asyncLoadIcon(@NotNull Manga entity) {
+    Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
     entity.setLatestChNum(parseLatestChapterNumber(document));
     String iconUrl = document.select("div > img[src]")
         .stream()
@@ -122,7 +199,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
   //TODO: is this not also a super method?
   @Async
-  private void asyncDownloadIcon(Manga entity, String iconUrl) {
+  private void asyncDownloadIcon(@NotNull Manga entity, String iconUrl) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
     log.info("Started download for %s".formatted(entity.getName()));
@@ -136,11 +213,11 @@ public class ReaperScansCrawler extends AbstractCrawler {
   }
 
   @Async
-  public ListenableFuture<Integer> fetchLatestChapterNumber(Manga entity) {
+  public ListenableFuture<Integer> fetchLatestChapterNumber(@NotNull Manga entity) {
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
 
-    Document document = getDocument(toUrl(BASE_URL, entity.getUrlName()));
+    Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
 
     stopWatch.stop();
     log.info("Latest chapter update for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
@@ -149,10 +226,20 @@ public class ReaperScansCrawler extends AbstractCrawler {
     return AsyncResult.forValue(parseLatestChapterNumber(document));
   }
 
-  // https://curlconverter.com/java/
+  /**
+   * Creates an HTTP connection with set requested properties to impersonate real request.
+   * Parse response and create SearchResultDtos with urls, names, the latest chapters and icons of mangas.
+   * <p>
+   * Resource: <a href="https://curlconverter.com/java/">CURL converter for Java</a>
+   * @param value       the searched query string
+   * @param pageRequest page request object containing page and page size
+   * @return list of search results dtos, containing urls, names, the latest chapters and icons of mangas
+   */
+  //TODO: move to super class and rename method
   public List<SearchResultDto> getMangaUrl(String value, PageRequest pageRequest) {
-    if (value == null)
+    if (value == null) {
       return Collections.emptyList();
+    }
 
     try {
       StopWatch stopWatch = new StopWatch();
@@ -160,7 +247,6 @@ public class ReaperScansCrawler extends AbstractCrawler {
 
       HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
       httpConn.setRequestMethod("POST");
-
       httpConn.setRequestProperty("content-type", "application/json");
       httpConn.setRequestProperty("referer", "https://reaperscans.com/");
       httpConn.setRequestProperty("user-agent", "Chrome");
@@ -180,16 +266,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
       Scanner s = new Scanner(responseStream).useDelimiter("\\A");
       String response = s.hasNext() ? s.next() : "";
 
-      Document document = Jsoup.parse(response, "UTF-8");
-      List<String> urls = parseResponseLinks(document);
-      List<String> names = parseResponseNames(document);
-      List<String> icons = parsResponseIcons(document);
-      List<Integer> latestChapters = parseResponseLatestChapters(document);
-
-      List<SearchResultDto> resultDtos = new ArrayList<>();
-      for (int i = 0; i < urls.size(); i++) {
-        resultDtos.add(new SearchResultDto(names.get(i), urls.get(i), icons.get(i), latestChapters.get(i)));
-      }
+      List<SearchResultDto> resultDtos = parseSearchResultDtos(response);
 
       stopWatch.stop();
       log.info("Found %d search results for \"%s\" loaded in %d ms"
@@ -202,7 +279,22 @@ public class ReaperScansCrawler extends AbstractCrawler {
     }
   }
 
-  private List<String> parseResponseLinks(Document document) {
+  private List<SearchResultDto> parseSearchResultDtos(String response) {
+    Document document = Jsoup.parse(response, "UTF-8");
+    List<String> urls = parseResponseLinks(document);
+    List<String> names = parseResponseNames(document);
+    List<String> icons = parsResponseIcons(document);
+    List<Integer> latestChapters = parseResponseLatestChapters(document);
+
+    List<SearchResultDto> resultDtos = new ArrayList<>();
+    for (int i = 0; i < urls.size(); i++) {
+      resultDtos.add(new SearchResultDto(names.get(i), urls.get(i), icons.get(i), latestChapters.get(i)));
+    }
+
+    return resultDtos;
+  }
+
+  private List<String> parseResponseLinks(@NotNull Document document) {
     return document
         .select("a[href*=comics]")
         .stream()
@@ -212,7 +304,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .toList();
   }
 
-  private List<String> parseResponseNames(Document document) {
+  private List<String> parseResponseNames(@NotNull Document document) {
     return document
         .select("a[href*=comics] > div > div > p[text-neutral-200]")
         .stream()
@@ -221,7 +313,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .toList();
   }
 
-  private List<String> parsResponseIcons(Document document) {
+  private List<String> parsResponseIcons(@NotNull Document document) {
     return document
         .select("a[href*=comics] > div > img[src]")
         .stream()
@@ -230,7 +322,7 @@ public class ReaperScansCrawler extends AbstractCrawler {
         .toList();
   }
 
-  private List<Integer> parseResponseLatestChapters(Document document) {
+  private List<Integer> parseResponseLatestChapters(@NotNull Document document) {
     return document
         .select("a[href*=comics] > div > div > p > span > span > i > span > i")
         .stream()
