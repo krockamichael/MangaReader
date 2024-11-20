@@ -39,296 +39,304 @@ import static java.lang.Math.ceil;
 @NoArgsConstructor
 public class ReaperScansCrawler extends Crawler {
 
-  private static final String CHAPTER = "chapter-";
+	private static final String CHAPTER = "chapter-";
 
-  @Override
-  protected String getBaseUrl() {
-    return "https://reaperscans.com/comics/";
-  }
+	@Override
+	protected String getBaseUrl() {
+		return "https://reaperscans.com/series/";
+	}
 
-  @Override
-  public List<String> parseChapter(@NotNull Manga entity, @NotNull Integer chapterID) {
-    double pageNum = ceil(((double) (entity.getLatestChNum() - chapterID - 1) / 32));
-    Document document = pageNum <= 1
-        ? getDocument(toUrl(getBaseUrl(), entity.getUrlName()))
-        : getDocument(toUrl(getBaseUrl(), entity.getUrlName(), "?page=", Double.toString(pageNum)));
+	@Override
+	public List<String> parseChapter(@NotNull Manga entity, @NotNull Integer chapterID) {
+		Double pageNum = entity.getLatestChNum() != null
+			? ceil(((double) (entity.getLatestChNum() - chapterID - 1) / 32))
+			: null;
 
-    if (document != null) {
-      String chapterUrl = parseChapterURL(document, chapterID.toString());
-      if (chapterUrl != null) {
-        Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
-        if (chapterDocument != null) {
-          log.info("Parsing images from ReaperScans.");
-          return parseImages(chapterDocument);
-        }
-      }
-    }
+		Document document = null;
+		if (pageNum != null) {
+			document = pageNum <= 1
+				? getDocument(toUrl(getBaseUrl(), entity.getUrlName()))
+				: getDocument(toUrl(getBaseUrl(), entity.getUrlName(), "?page=", Double.toString(pageNum)));
+		}
 
-    return attemptGoogleSearch(entity, chapterID);
-  }
+		if (document != null) {
+			String chapterUrl = parseChapterURL(document, chapterID.toString());
+			if (chapterUrl != null) {
+				Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+				if (chapterDocument != null) {
+					log.info("Parsing images from ReaperScans.");
+					return parseImages(chapterDocument);
+				}
+			}
+		}
 
-  private List<String> attemptGoogleSearch(Manga entity, Integer targetChapterID) {
-    String chapterUrl = getChapterUrlGoogle(entity, targetChapterID);
+		return attemptGoogleSearch(entity, chapterID);
+	}
 
-    if (chapterUrl != null && chapterUrl.endsWith(CHAPTER + targetChapterID)) {
-      Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
-      if (chapterDocument != null) {
-        log.info("Parsing images from Google Search.");
-        return parseImages(chapterDocument);
-      }
-    }
+	private List<String> attemptGoogleSearch(Manga entity, Integer targetChapterID) {
+		String chapterUrl = getChapterUrlGoogle(entity, targetChapterID);
 
-    return attemptAdjacentChaptersGoogleSearch(entity, targetChapterID);
-  }
+		if (chapterUrl != null && chapterUrl.endsWith(CHAPTER + targetChapterID)) {
+			Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+			if (chapterDocument != null) {
+				log.info("Parsing images from Google Search.");
+				return parseImages(chapterDocument);
+			}
+		}
 
-  private List<String> attemptAdjacentChaptersGoogleSearch(Manga entity, Integer targetChapterID) {
-    List<Integer> chapterIdsToCheck = List.of(targetChapterID + 1, targetChapterID - 1);
+		return attemptAdjacentChaptersGoogleSearch(entity, targetChapterID);
+	}
 
-    for (Integer adjacentChapterId : chapterIdsToCheck) {
-      String chapterUrl = getChapterUrlGoogle(entity, adjacentChapterId);
+	private List<String> attemptAdjacentChaptersGoogleSearch(Manga entity, Integer targetChapterID) {
+		List<Integer> chapterIdsToCheck = List.of(targetChapterID + 1, targetChapterID - 1);
 
-      if (chapterUrl == null || !chapterUrl.endsWith(CHAPTER + (adjacentChapterId))) {
-        continue;
-      }
+		for (Integer adjacentChapterId : chapterIdsToCheck) {
+			String chapterUrl = getChapterUrlGoogle(entity, adjacentChapterId);
 
-      chapterUrl = getLinkFromAdjacentChapter(chapterUrl, targetChapterID);
-      if (chapterUrl != null) {
-        Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
-        if (chapterDocument != null) {
-          log.info("Parsing images from ADJACENT chapter {} Google Search.", adjacentChapterId);
-          return parseImages(chapterDocument);
-        }
-      }
-    }
+			if (chapterUrl == null || !chapterUrl.endsWith(CHAPTER + (adjacentChapterId))) {
+				continue;
+			}
 
-    return Collections.emptyList();
-  }
+			chapterUrl = getLinkFromAdjacentChapter(chapterUrl, targetChapterID);
+			if (chapterUrl != null) {
+				Document chapterDocument = getDocumentWithNumberOfRetries(getBaseUrl() + chapterUrl, 3);
+				if (chapterDocument != null) {
+					log.info("Parsing images from ADJACENT chapter {} Google Search.", adjacentChapterId);
+					return parseImages(chapterDocument);
+				}
+			}
+		}
 
-  private String getLinkFromAdjacentChapter(String chapterUrl, Integer chapterID) {
-    Document chapterDocument = getDocument(chapterUrl);
-    return chapterDocument.select("nav > div > a")
-        .stream()
-        .map(anchorTag -> anchorTag.attr("href"))
-        .filter(url -> url.endsWith(CHAPTER + chapterID))
-        .findFirst()
-        .orElse(null);
-  }
+		return Collections.emptyList();
+	}
 
-  private String getChapterUrlGoogle(@NotNull Manga entity, Integer chapterID) {
-    String googleSearchUrl = getGoogleSearchUrlForChapter(getBaseUrl(), entity.getName(), chapterID);
-    Document document = getDocument(googleSearchUrl);
-    return parseChapterURL(document);
-  }
+	private String getLinkFromAdjacentChapter(String chapterUrl, Integer chapterID) {
+		Document chapterDocument = getDocument(chapterUrl);
+		return chapterDocument.select("nav > div > a")
+			.stream()
+			.map(anchorTag -> anchorTag.attr("href"))
+			.filter(url -> url.endsWith(CHAPTER + chapterID))
+			.findFirst()
+			.orElse(null);
+	}
 
-  @Override
-  protected Integer parseLatestChapterNumber(@NotNull Document document) {
-    return document.select("div > div > h1")
-        .stream()
-        .skip(1)
-        .findFirst()
-        .map(Element::text)
-        .filter(e -> !e.equals(""))
-        .map(e -> e.split(" ")[0])
-        .map(Integer::parseInt)
-        .orElse(null);
-  }
+	private String getChapterUrlGoogle(@NotNull Manga entity, Integer chapterID) {
+		String googleSearchUrl = getGoogleSearchUrlForChapter(getBaseUrl(), entity.getName(), chapterID);
+		Document document = getDocument(googleSearchUrl);
+		return parseChapterURL(document);
+	}
 
-  private String parseChapterURL(@NotNull Document document, String chapterNumber) {
-    return document.select("li > a[href]")
-        .stream()
-        .map(e -> e.attr("href"))
-        .filter(e -> e.endsWith(CHAPTER + chapterNumber))
-        .findFirst()
-        .orElse(null);
-  }
+	@Override
+	protected Integer parseLatestChapterNumber(@NotNull Document document) {
+		return document.select("div > div > a[href]")
+			.stream()
+			.map(Element::attributes)
+			.map(atr -> atr.get("href"))
+			.filter(href -> href.startsWith("/series"))
+			.map(href -> href.split("chapter-")[1])
+			.map(Integer::parseInt)
+			.max(Integer::compare)
+			.orElse(null);
+	}
 
-  @Override
-  protected String parseChapterURL(@NotNull Document document) {
-    return document.select("a[href] > div > div > h3")
-        .parents()
-        .stream()
-        .filter(item -> item.tagName().equals("a"))
-        .map(item -> item.absUrl("href"))
-        // Google returns URLs in format "http://www.google.com/url?q=<url>&sa=U&ei=<someKey>"
-        .map(item -> URLDecoder.decode(item.substring(item.indexOf('=') + 1, item.indexOf('&')), StandardCharsets.UTF_8))
-        .findAny()
-        .orElse(null);
-  }
+	private String parseChapterURL(@NotNull Document document, String chapterNumber) {
+		return document.select("li > a[href]")
+			.stream()
+			.map(e -> e.attr("href"))
+			.filter(e -> e.endsWith(CHAPTER + chapterNumber))
+			.findFirst()
+			.orElse(null);
+	}
 
-  @Override
-  protected List<String> parseImages(@NotNull Document document) {
-    return document.select("main > div > p > img[src]")
-        .stream()
-        .map(e -> e.attr("src"))
-        .toList();
-  }
+	@Override
+	protected String parseChapterURL(@NotNull Document document) {
+		return document.select("a[href] > div > div > h3")
+			.parents()
+			.stream()
+			.filter(item -> item.tagName().equals("a"))
+			.map(item -> item.absUrl("href"))
+			// Google returns URLs in format "http://www.google.com/url?q=<url>&sa=U&ei=<someKey>"
+			.map(item -> URLDecoder.decode(item.substring(item.indexOf('=') + 1, item.indexOf('&')), StandardCharsets.UTF_8))
+			.findAny()
+			.orElse(null);
+	}
 
-  //TODO: can this be implemented in abstract crawler and the asyncLoadIcon be overridden in subclasses?
-  public ListenableFuture<String> asyncLoadIconTimed(Manga entity) {
-    StopWatch stopWatch = new StopWatch();
-    stopWatch.start();
+	@Override
+	protected List<String> parseImages(@NotNull Document document) {
+		return document.select("main > div > p > img[src]")
+			.stream()
+			.map(e -> e.attr("src"))
+			.toList();
+	}
 
-    ListenableFuture<String> result = asyncLoadIcon(entity);
+	//TODO: can this be implemented in abstract crawler and the asyncLoadIcon be overridden in subclasses?
+	public ListenableFuture<String> asyncLoadIconTimed(Manga entity) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
 
-    stopWatch.stop();
-    log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
-    return result;
-  }
+		ListenableFuture<String> result = asyncLoadIcon(entity);
 
-  /**
-   * Icon is not downloaded, download it in background, show icon from website
-   * @param entity the manga entity
-   * @return the icon url
-   */
-  @Async
-  @Override
-  public ListenableFuture<String> asyncLoadIcon(@NotNull Manga entity) {
-    Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
-    entity.setLatestChNum(parseLatestChapterNumber(document));
-    String iconUrl = document.select("div > img[src]")
-        .stream()
-        .map(e -> e.attr("src"))
-        .findFirst()
-        .orElse(null);
+		stopWatch.stop();
+		log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
+		return result;
+	}
 
-    new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
+	/**
+	 * Icon is not downloaded, download it in background, show icon from website
+	 *
+	 * @param entity the manga entity
+	 * @return the icon url
+	 */
+	@Async
+	@Override
+	public ListenableFuture<String> asyncLoadIcon(@NotNull Manga entity) {
+		Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
+		entity.setLatestChNum(parseLatestChapterNumber(document));
+		String iconUrl = document.select("div > img[src]")
+			.stream()
+			.map(e -> e.attr("src"))
+			.findFirst()
+			.orElse(null);
 
-    assert iconUrl != null;
-    return AsyncResult.forValue(iconUrl);
-  }
+		new Thread(() -> asyncDownloadIcon(entity, iconUrl)).start();
 
-  //TODO: is this not also a super method?
-  @Async
-  private void asyncDownloadIcon(@NotNull Manga entity, String iconUrl) {
-    StopWatch stopWatch = new StopWatch();
-    stopWatch.start();
-    log.info("Started download for %s".formatted(entity.getName()));
+		assert iconUrl != null;
+		return AsyncResult.forValue(iconUrl);
+	}
 
-    String newIconPath = getDownloadPath(entity.getUrlName());
-    writeImage(newIconPath, getImage(iconUrl));
-    entity.setIconPath(getRelativePath(newIconPath));
+	//TODO: is this not also a super method?
+	@Async
+	private void asyncDownloadIcon(@NotNull Manga entity, String iconUrl) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		log.info("Started download for %s".formatted(entity.getName()));
 
-    stopWatch.stop();
-    log.info("Finished download for %s icon in %d ms.".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
-  }
+		String newIconPath = getDownloadPath(entity.getUrlName());
+		writeImage(newIconPath, getImage(iconUrl));
+		entity.setIconPath(getRelativePath(newIconPath));
 
-  @Async
-  public ListenableFuture<Integer> fetchLatestChapterNumber(@NotNull Manga entity) {
-    StopWatch stopWatch = new StopWatch();
-    stopWatch.start();
+		stopWatch.stop();
+		log.info("Finished download for %s icon in %d ms.".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
+	}
 
-    Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
+	@Async
+	public ListenableFuture<Integer> fetchLatestChapterNumber(@NotNull Manga entity) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
 
-    stopWatch.stop();
-    log.info("Latest chapter update for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
+		Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
 
-    assert document != null;
-    return AsyncResult.forValue(parseLatestChapterNumber(document));
-  }
+		stopWatch.stop();
+		log.info("Latest chapter update for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
 
-  /**
-   * Creates an HTTP connection with set requested properties to impersonate real request.
-   * Parse response and create SearchResultDtos with urls, names, the latest chapters and icons of mangas.
-   * <p>
-   * Resource: <a href="https://curlconverter.com/java/">CURL converter for Java</a>
-   * @param value       the searched query string
-   * @param pageRequest page request object containing page and page size
-   * @return list of search results dtos, containing urls, names, the latest chapters and icons of mangas
-   */
-  //TODO: move to super class and rename method
-  public List<SearchResultDto> getMangaUrl(String value, PageRequest pageRequest) {
-    if (value == null) {
-      return Collections.emptyList();
-    }
+		assert document != null;
+		return AsyncResult.forValue(parseLatestChapterNumber(document));
+	}
 
-    try {
-      StopWatch stopWatch = new StopWatch();
-      stopWatch.start();
+	/**
+	 * Creates an HTTP connection with set requested properties to impersonate real request.
+	 * Parse response and create SearchResultDtos with urls, names, the latest chapters and icons of mangas.
+	 * <p>
+	 * Resource: <a href="https://curlconverter.com/java/">CURL converter for Java</a>
+	 *
+	 * @param value       the searched query string
+	 * @param pageRequest page request object containing page and page size
+	 * @return list of search results dtos, containing urls, names, the latest chapters and icons of mangas
+	 */
+	//TODO: move to super class and rename method
+	public List<SearchResultDto> getMangaUrl(String value, PageRequest pageRequest) {
+		if (value == null) {
+			return Collections.emptyList();
+		}
 
-      HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
-      httpConn.setRequestMethod("POST");
-      httpConn.setRequestProperty("content-type", "application/json");
-      httpConn.setRequestProperty("referer", "https://reaperscans.com/");
-      httpConn.setRequestProperty("user-agent", "Chrome");
-      httpConn.setRequestProperty("x-livewire", "true");
+		try {
+			StopWatch stopWatch = new StopWatch();
+			stopWatch.start();
 
-      httpConn.setDoOutput(true);
-      OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
-      writer.write("{\"fingerprint\":{\"id\":\"olJuYSFBkawm5K7qqSJk\",\"name\":\"frontend.dtddzhx-ghvjlgrpt\",\"locale\":\"en\",\"path\":\"/\",\"method\":\"GET\",\"v\":\"acj\"},\"serverMemo\":{\"children\":[],\"errors\":[],\"htmlHash\":\"5a182466\",\"data\":{\"query\":\"\",\"comics\":[],\"novels\":[]},\"dataMeta\":[],\"checksum\":\"ecf28746c7fd2589eebf011c40e8c26656c8e73c52c47714f79d35e433a3b834\"},\"updates\":[{\"type\":\"syncInput\",\"payload\":{\"id\":\"enwxj\",\"name\":\"query\"," +
-          "\"value\":\"%s\"}}]}".formatted(value));
-      writer.flush();
-      writer.close();
-      httpConn.getOutputStream().close();
+			HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
+			httpConn.setRequestMethod("POST");
+			httpConn.setRequestProperty("content-type", "application/json");
+			httpConn.setRequestProperty("referer", "https://reaperscans.com/");
+			httpConn.setRequestProperty("user-agent", "Chrome");
+			httpConn.setRequestProperty("x-livewire", "true");
 
-      InputStream responseStream = httpConn.getResponseCode() / 100 == 2
-          ? httpConn.getInputStream()
-          : httpConn.getErrorStream();
-      Scanner s = new Scanner(responseStream).useDelimiter("\\A");
-      String response = s.hasNext() ? s.next() : "";
+			httpConn.setDoOutput(true);
+			OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
+			writer.write("{\"fingerprint\":{\"id\":\"olJuYSFBkawm5K7qqSJk\",\"name\":\"frontend.dtddzhx-ghvjlgrpt\",\"locale\":\"en\",\"path\":\"/\",\"method\":\"GET\",\"v\":\"acj\"},\"serverMemo\":{\"children\":[],\"errors\":[],\"htmlHash\":\"5a182466\",\"data\":{\"query\":\"\",\"comics\":[],\"novels\":[]},\"dataMeta\":[],\"checksum\":\"ecf28746c7fd2589eebf011c40e8c26656c8e73c52c47714f79d35e433a3b834\"},\"updates\":[{\"type\":\"syncInput\",\"payload\":{\"id\":\"enwxj\",\"name\":\"query\"," +
+				"\"value\":\"%s\"}}]}".formatted(value));
+			writer.flush();
+			writer.close();
+			httpConn.getOutputStream().close();
 
-      List<SearchResultDto> resultDtos = parseSearchResultDtos(response);
+			InputStream responseStream = httpConn.getResponseCode() / 100 == 2
+				? httpConn.getInputStream()
+				: httpConn.getErrorStream();
+			Scanner s = new Scanner(responseStream).useDelimiter("\\A");
+			String response = s.hasNext() ? s.next() : "";
 
-      stopWatch.stop();
-      log.info("Found %d search results for \"%s\" loaded in %d ms"
-          .formatted(resultDtos.size(), value, stopWatch.getLastTaskTimeMillis()));
+			List<SearchResultDto> resultDtos = parseSearchResultDtos(response);
 
-      return resultDtos;
-    } catch (IOException e) {
-      log.error(e);
-      return Collections.emptyList();
-    }
-  }
+			stopWatch.stop();
+			log.info("Found %d search results for \"%s\" loaded in %d ms"
+				.formatted(resultDtos.size(), value, stopWatch.getLastTaskTimeMillis()));
 
-  private List<SearchResultDto> parseSearchResultDtos(String response) {
-    Document document = Jsoup.parse(response, "UTF-8");
-    List<String> urls = parseResponseLinks(document);
-    List<String> names = parseResponseNames(document);
-    List<String> icons = parsResponseIcons(document);
-    List<Integer> latestChapters = parseResponseLatestChapters(document);
+			return resultDtos;
+		} catch (IOException e) {
+			log.error(e);
+			return Collections.emptyList();
+		}
+	}
 
-    List<SearchResultDto> resultDtos = new ArrayList<>();
-    for (int i = 0; i < urls.size(); i++) {
-      resultDtos.add(new SearchResultDto(names.get(i), urls.get(i), icons.get(i), latestChapters.get(i)));
-    }
+	private List<SearchResultDto> parseSearchResultDtos(String response) {
+		Document document = Jsoup.parse(response, "UTF-8");
+		List<String> urls = parseResponseLinks(document);
+		List<String> names = parseResponseNames(document);
+		List<String> icons = parsResponseIcons(document);
+		List<Integer> latestChapters = parseResponseLatestChapters(document);
 
-    return resultDtos;
-  }
+		List<SearchResultDto> resultDtos = new ArrayList<>();
+		for (int i = 0; i < urls.size(); i++) {
+			resultDtos.add(new SearchResultDto(names.get(i), urls.get(i), icons.get(i), latestChapters.get(i)));
+		}
 
-  private List<String> parseResponseLinks(@NotNull Document document) {
-    return document
-        .select("a[href*=comics]")
-        .stream()
-        .map(e -> e.attr("href"))
-        .distinct()
-        .map(e -> e.split("/")[4].replace("\\\"", ""))
-        .toList();
-  }
+		return resultDtos;
+	}
 
-  private List<String> parseResponseNames(@NotNull Document document) {
-    return document
-        .select("a[href*=comics] > div > div > p[text-neutral-200]")
-        .stream()
-        .map(Element::text)
-        .map(e -> e.trim().split("\\\\n ")[1])
-        .toList();
-  }
+	private List<String> parseResponseLinks(@NotNull Document document) {
+		return document
+			.select("a[href*=comics]")
+			.stream()
+			.map(e -> e.attr("href"))
+			.distinct()
+			.map(e -> e.split("/")[4].replace("\\\"", ""))
+			.toList();
+	}
 
-  private List<String> parsResponseIcons(@NotNull Document document) {
-    return document
-        .select("a[href*=comics] > div > img[src]")
-        .stream()
-        .map(e -> e.attr("src"))
-        .map(e -> e.replace("\\\"", "").replace("/", ""))
-        .toList();
-  }
+	private List<String> parseResponseNames(@NotNull Document document) {
+		return document
+			.select("a[href*=comics] > div > div > p[text-neutral-200]")
+			.stream()
+			.map(Element::text)
+			.map(e -> e.trim().split("\\\\n ")[1])
+			.toList();
+	}
 
-  private List<Integer> parseResponseLatestChapters(@NotNull Document document) {
-    return document
-        .select("a[href*=comics] > div > div > p > span > span > i > span > i")
-        .stream()
-        .map(Element::text)
-        .map(e -> e.split(" ")[1])
-        .map(Integer::parseInt)
-        .toList();
-  }
+	private List<String> parsResponseIcons(@NotNull Document document) {
+		return document
+			.select("a[href*=comics] > div > img[src]")
+			.stream()
+			.map(e -> e.attr("src"))
+			.map(e -> e.replace("\\\"", "").replace("/", ""))
+			.toList();
+	}
+
+	private List<Integer> parseResponseLatestChapters(@NotNull Document document) {
+		return document
+			.select("a[href*=comics] > div > div > p > span > span > i > span > i")
+			.stream()
+			.map(Element::text)
+			.map(e -> e.split(" ")[1])
+			.map(Integer::parseInt)
+			.toList();
+	}
 }
