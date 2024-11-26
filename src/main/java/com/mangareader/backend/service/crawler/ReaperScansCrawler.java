@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
@@ -43,7 +42,7 @@ public class ReaperScansCrawler extends Crawler {
 
 	@Override
 	protected String getBaseUrl() {
-		return "https://reaperscans.com/series/";
+		return "https://reaperscans.com";
 	}
 
 	@Override
@@ -55,14 +54,14 @@ public class ReaperScansCrawler extends Crawler {
 		Document document = null;
 		if (pageNum != null) {
 			document = pageNum <= 1
-				? getDocument(toUrl(getBaseUrl(), entity.getUrlName()))
-				: getDocument(toUrl(getBaseUrl(), entity.getUrlName(), "?page=", Double.toString(pageNum)));
+				? getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName()))
+				: getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName(), "?page=", Double.toString(pageNum)));
 		}
 
 		if (document != null) {
 			String chapterUrl = parseChapterURL(document, chapterID.toString());
 			if (chapterUrl != null) {
-				Document chapterDocument = getDocumentWithNumberOfRetries(chapterUrl, 3);
+				Document chapterDocument = getDocumentWithNumberOfRetries(getBaseUrl() + chapterUrl, 3);
 				if (chapterDocument != null) {
 					log.info("Parsing images from ReaperScans.");
 					return parseImages(chapterDocument);
@@ -140,7 +139,7 @@ public class ReaperScansCrawler extends Crawler {
 	}
 
 	private String parseChapterURL(@NotNull Document document, String chapterNumber) {
-		return document.select("li > a[href]")
+		return document.select("a[href]")
 			.stream()
 			.map(e -> e.attr("href"))
 			.filter(e -> e.endsWith(CHAPTER + chapterNumber))
@@ -163,22 +162,12 @@ public class ReaperScansCrawler extends Crawler {
 
 	@Override
 	protected List<String> parseImages(@NotNull Document document) {
-		return document.select("main > div > p > img[src]")
+		return document.select("img[src]")
 			.stream()
 			.map(e -> e.attr("src"))
+			.filter(e -> e.contains("media"))
+			.filter(e -> e.matches(".*?\\d+\\.jpg$"))
 			.toList();
-	}
-
-	//TODO: can this be implemented in abstract crawler and the asyncLoadIcon be overridden in subclasses?
-	public ListenableFuture<String> asyncLoadIconTimed(Manga entity) {
-		StopWatch stopWatch = new StopWatch();
-		stopWatch.start();
-
-		ListenableFuture<String> result = asyncLoadIcon(entity);
-
-		stopWatch.stop();
-		log.info("Icon loaded for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
-		return result;
 	}
 
 	/**
@@ -239,12 +228,11 @@ public class ReaperScansCrawler extends Crawler {
 	 * <p>
 	 * Resource: <a href="https://curlconverter.com/java/">CURL converter for Java</a>
 	 *
-	 * @param value       the searched query string
-	 * @param pageRequest page request object containing page and page size
+	 * @param value the searched query string
 	 * @return list of search results dtos, containing urls, names, the latest chapters and icons of mangas
 	 */
 	//TODO: move to super class and rename method
-	public List<SearchResultDto> getMangaUrl(String value, PageRequest pageRequest) {
+	public List<SearchResultDto> getMangaUrl(String value) {
 		if (value == null) {
 			return Collections.emptyList();
 		}
@@ -253,12 +241,7 @@ public class ReaperScansCrawler extends Crawler {
 			StopWatch stopWatch = new StopWatch();
 			stopWatch.start();
 
-			HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
-			httpConn.setRequestMethod("POST");
-			httpConn.setRequestProperty("content-type", "application/json");
-			httpConn.setRequestProperty("referer", "https://reaperscans.com/");
-			httpConn.setRequestProperty("user-agent", "Chrome");
-			httpConn.setRequestProperty("x-livewire", "true");
+			HttpURLConnection httpConn = getHttpURLConnection();
 
 			httpConn.setDoOutput(true);
 			OutputStreamWriter writer = new OutputStreamWriter(httpConn.getOutputStream());
@@ -285,6 +268,16 @@ public class ReaperScansCrawler extends Crawler {
 			log.error(e);
 			return Collections.emptyList();
 		}
+	}
+
+	private HttpURLConnection getHttpURLConnection() throws IOException {
+		HttpURLConnection httpConn = (HttpURLConnection) new URL("https://reaperscans.com/livewire/message/frontend.dtddzhx-ghvjlgrpt").openConnection();
+		httpConn.setRequestMethod("POST");
+		httpConn.setRequestProperty("content-type", "application/json");
+		httpConn.setRequestProperty("referer", "https://reaperscans.com/");
+		httpConn.setRequestProperty("user-agent", "Chrome");
+		httpConn.setRequestProperty("x-livewire", "true");
+		return httpConn;
 	}
 
 	private List<SearchResultDto> parseSearchResultDtos(String response) {
