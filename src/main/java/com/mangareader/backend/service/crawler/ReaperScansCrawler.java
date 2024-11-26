@@ -28,7 +28,6 @@ import java.util.Scanner;
 
 import static com.mangareader.backend.data.service.Utils.getDownloadPath;
 import static com.mangareader.backend.data.service.Utils.getRelativePath;
-import static java.lang.Math.ceil;
 
 /**
  * Crawler implementation for ReaperScans website.
@@ -47,26 +46,11 @@ public class ReaperScansCrawler extends Crawler {
 
 	@Override
 	public List<String> parseChapter(@NotNull Manga entity, @NotNull Integer chapterID) {
-		Double pageNum = entity.getLatestChNum() != null
-			? ceil(((double) (entity.getLatestChNum() - chapterID - 1) / 32))
-			: null;
-
-		Document document = null;
-		if (pageNum != null) {
-			document = pageNum <= 1
-				? getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName()))
-				: getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName(), "?page=", Double.toString(pageNum)));
-		}
+		Document document = getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName(), "/", CHAPTER, chapterID.toString()));
 
 		if (document != null) {
-			String chapterUrl = parseChapterURL(document, chapterID.toString());
-			if (chapterUrl != null) {
-				Document chapterDocument = getDocumentWithNumberOfRetries(getBaseUrl() + chapterUrl, 3);
-				if (chapterDocument != null) {
-					log.info("Parsing images from ReaperScans.");
-					return parseImages(chapterDocument);
-				}
-			}
+			log.info("Parsing images from ReaperScans.");
+			return parseImages(document);
 		}
 
 		return attemptGoogleSearch(entity, chapterID);
@@ -162,12 +146,35 @@ public class ReaperScansCrawler extends Crawler {
 
 	@Override
 	protected List<String> parseImages(@NotNull Document document) {
-		return document.select("img[src]")
+		List<String> imageSources = document.select("img[src]")
 			.stream()
 			.map(e -> e.attr("src"))
 			.filter(e -> e.contains("media"))
-			.filter(e -> e.matches(".*?\\d+\\.jpg$"))
 			.toList();
+
+		List<String> result = new ArrayList<>();
+		result.add(strip(imageSources.get(1)));
+
+		imageSources.subList(2, imageSources.size())
+			.forEach(source -> {
+				if (!source.matches(".*?\\d+\\..*?")) {
+					return; // early exit
+				}
+
+				result.add(source.endsWith(".jpg") || source.endsWith(".png")
+					? source
+					: strip(source));
+			});
+
+		return result;
+	}
+
+	private String strip(String source) {
+		return source
+			.split("url=")[1]
+			.split("&")[0]
+			.replace("%2F", "/")
+			.replace("%3A", ":");
 	}
 
 	/**
@@ -213,7 +220,7 @@ public class ReaperScansCrawler extends Crawler {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 
-		Document document = getDocument(toUrl(getBaseUrl(), entity.getUrlName()));
+		Document document = getDocument(toUrl(getBaseUrl(), "/series/", entity.getUrlName()));
 
 		stopWatch.stop();
 		log.info("Latest chapter update for %s in %d ms".formatted(entity.getName(), stopWatch.getLastTaskTimeMillis()));
